@@ -1,0 +1,18 @@
+{
+  "navigation": {
+    "dashboard": "Dashboard",
+    "projects": "Projekte",
+    "settings": "Einstellungen",
+    "logout": "Abmelden"
+  },
+  "dashboard": {
+    "welcome": "Willkommen zurück, {name}",
+    "activity": "Aktivität",
+    "projects": "Ihre Projekte"
+  },
+  "security": {
+    "title": "Sicherheit & Compliance",
+    "sso_enabled": "Single Sign-On ist aktiv",
+    "mfa_required": "Multi-Faktor-Authentifizierung erforderlich"
+  }
+}

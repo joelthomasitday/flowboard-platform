@@ -1,0 +1,10 @@
+{
+  "name": "OpenRouterDefaultError",
+  "message": "API error occurred: Status 404\nBody: {\"error\":{\"message\":\"No endpoints found for google/gemini-2.0-flash-exp:free.\",\"code\":404},\"user_id\":\"user_2zGFxaA8focKaAp3zGcwhKvb4Ga\"}",
+  "stack": "OpenRouterDefaultError: API error occurred: Status 404\nBody: {\"error\":{\"message\":\"No endpoints found for google/gemini-2.0-flash-exp:free.\",\"code\":404},\"user_id\":\"user_2zGFxaA8focKaAp3zGcwhKvb4Ga\"}\n    at matchFunc (file:///D:/guha/videCode/flowboard/node_modules/@openrouter/sdk/esm/lib/matchers.js:131:28)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async $do (file:///D:/guha/videCode/flowboard/node_modules/@openrouter/sdk/esm/funcs/chatSend.js:77:22)",
+  "statusCode": 404,
+  "body": "{\"error\":{\"message\":\"No endpoints found for google/gemini-2.0-flash-exp:free.\",\"code\":404},\"user_id\":\"user_2zGFxaA8focKaAp3zGcwhKvb4Ga\"}",
+  "headers": {},
+  "contentType": "application/json",
+  "rawResponse": {}
+}

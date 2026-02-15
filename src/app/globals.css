@@ -1,26 +1,229 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ══════════════════════════════════════════
+   FlowBoard — Soft Editorial Pastel System
+   Premium · Design-forward · Modern Editorial
+   ══════════════════════════════════════════ */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* ─── Typography ─── */
+  --font-syne: var(--font-syne), "Syne", sans-serif;
+  --font-body: var(--font-inter), "Inter", sans-serif;
+  --font-serif: var(--font-instrument-serif), "Instrument Serif", serif;
+  --font-mono: var(--font-geist-mono), "Geist Mono", monospace;
+
+  /* ─── Brand Palette ─── */
+  --color-deep-blue: #364c84;
+  --color-deep-blue-dark: #2a3d6b;
+  --color-deep-blue-light: #4a62a0;
+  --color-soft-blue: #95b1ee;
+  --color-soft-blue-light: #b3c8f5;
+  --color-soft-blue-muted: #cedaf7;
+  --color-light-green: #e7f1a8;
+  --color-light-green-dark: #d4e27a;
+  --color-light-green-muted: #f0f6cc;
+  --color-cream: #fffdf5;
+  --color-cream-warm: #fff9e8;
+  --color-cream-cool: #f8f6f0;
+
+  /* ─── Surfaces ─── */
+  --color-surface-primary: #fffdf5;
+  --color-surface-elevated: #ffffff;
+  --color-surface-sunken: #f5f3ed;
+  --color-surface-tinted: #f0f4fd;
+  --color-surface-accent: #f7f9e8;
+
+  /* ─── Semantic ─── */
+  --color-background: var(--color-cream);
+  --color-foreground: #1a1a2e;
+  --color-muted: #6b7280;
+  --color-muted-light: #9ca3af;
+
+  /* ─── Borders ─── */
+  --color-border: #e5e2da;
+  --color-border-soft: #edebe5;
+  --color-border-blue: rgba(149, 177, 238, 0.3);
+  --color-border-green: rgba(231, 241, 168, 0.5);
+
+  /* ─── Shadows ─── */
+  --shadow-soft:
+    0 1px 3px rgba(54, 76, 132, 0.04), 0 4px 12px rgba(54, 76, 132, 0.06);
+  --shadow-medium:
+    0 2px 8px rgba(54, 76, 132, 0.06), 0 8px 24px rgba(54, 76, 132, 0.08);
+  --shadow-elevated:
+    0 4px 16px rgba(54, 76, 132, 0.08), 0 12px 40px rgba(54, 76, 132, 0.1);
+  --shadow-glow-blue: 0 4px 20px rgba(149, 177, 238, 0.15);
+  --shadow-glow-green: 0 4px 20px rgba(231, 241, 168, 0.2);
+
+  /* ─── Radius ─── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ─── Custom Utilities ─── */
+@utility text-clamp-hero {
+  font-size: clamp(3.5rem, 12vw, 9rem);
+}
+
+@utility text-clamp-statement {
+  font-size: clamp(3rem, 10vw, 7rem);
+}
+
+@utility perspective-2000 {
+  perspective: 2000px;
+}
+
+@utility glass-panel {
+  background: rgba(255, 253, 245, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(54, 76, 132, 0.08);
+  box-shadow: var(--shadow-soft);
+  will-change: backdrop-filter;
+}
+
+@utility glass-panel-blue {
+  background: rgba(149, 177, 238, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(149, 177, 238, 0.15);
+  box-shadow: var(--shadow-glow-blue);
+  will-change: backdrop-filter;
+}
+
+@utility grain-overlay {
+  position: relative;
+  isolation: isolate;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    /* Using a significantly simpler noise pattern for performance */
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.015;
+    mix-blend-mode: overlay;
+    z-index: 50;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility editorial-grid {
+  background-image:
+    linear-gradient(to right, rgba(54, 76, 132, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(54, 76, 132, 0.04) 1px, transparent 1px);
+  background-size: 80px 80px;
+  transform: translateZ(0); /* Force GPU acceleration for background patterns */
+}
+
+@utility pastel-dots {
+  background-image: radial-gradient(
+    circle,
+    rgba(149, 177, 238, 0.12) 1px,
+    transparent 1px
+  );
+  background-size: 28px 28px;
+  transform: translateZ(0);
+}
+
+@utility gradient-blue-green {
+  background: linear-gradient(
+    135deg,
+    rgba(149, 177, 238, 0.15) 0%,
+    rgba(231, 241, 168, 0.12) 100%
+  );
+  transform: translateZ(0);
+}
+
+@utility gradient-cream-blue {
+  background: linear-gradient(
+    180deg,
+    var(--color-cream) 0%,
+    var(--color-surface-tinted) 100%
+  );
+}
+
+@utility gradient-hero-glow {
+  background:
+    radial-gradient(
+      ellipse at 30% 50%,
+      rgba(149, 177, 238, 0.18) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at 70% 30%,
+      rgba(231, 241, 168, 0.1) 0%,
+      transparent 50%
+    );
+}
+
+@utility section-wave-top {
+  clip-path: ellipse(120% 100% at 50% 100%);
+}
+
+@utility section-curve-bottom {
+  clip-path: ellipse(120% 100% at 50% 0%);
+}
+
+/* ─── Base Styles ─── */
+@layer base {
+  body {
+    @apply bg-cream text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeSpeed;
+    scroll-behavior: smooth;
+  }
+
+  ::selection {
+    background: rgba(149, 177, 238, 0.3);
+    color: #364c84;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--color-deep-blue);
+  }
+}
+
+/* ─── Soft Interactions ─── */
+.magnetic-wrap {
+  display: inline-block;
+  transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.magnetic-wrap:hover {
+  transform: scale(1.03) translate(2px, -2px);
+}
+
+/* ─── Smooth Float Animation (Removed for performance) ─── */
+/* ─── Pastel Pulse (Removed for performance) ─── */
+
+/* ─── Nav Soft Shadow ─── */
+@utility nav-shadow {
+  box-shadow:
+    0 2px 16px rgba(54, 76, 132, 0.06),
+    0 1px 4px rgba(54, 76, 132, 0.04);
+}
+
+/* ─── Soft Card Hover ─── */
+.card-editorial {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-soft);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-soft);
+  transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.card-editorial:hover {
+  box-shadow: var(--shadow-medium);
+  border-color: var(--color-border-blue);
+  transform: translateY(-2px);
 }

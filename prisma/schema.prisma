@@ -1,0 +1,244 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  GUEST
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  ssoId         String?   @unique
+  memberships   Membership[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Workspace {
+  id              String       @id @default(cuid())
+  name            String
+  slug            String       @unique
+  memberships     Membership[]
+  projects        Project[]
+  aiUsage         AIUsage[]
+  
+  stripeCustomerId      String?   @unique
+  stripeSubscriptionId  String?   @unique
+  subscriptionStatus    String?   @default("trialing")
+  planType              String    @default("starter")
+  
+  aiTokenUsage         Int       @default(0)
+  automationUsage      Int       @default(0)
+  
+  trialEndsAt          DateTime? 
+  subscriptionEndsAt   DateTime?
+  
+  automationRules      AutomationRule[]
+  automationExecutions AutomationExecution[]
+  activityLogs         ActivityLog[]
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  analyticsEvents      AnalyticsEvent[]
+
+  ssoEnabled           Boolean   @default(false)
+  ssoProvider          String?
+  ssoDomain            String?
+  ssoConfig            Json?
+  
+  brandingConfig       Json?
+  customDomain         String?   @unique
+
+  region               String    @default("us-east-1")
+  dataResidency        Boolean   @default(false)
+  
+  ipAllowlist          String[]  @default([])
+  sessionTimeout       Int       @default(60)
+  auditLogRetention    Int       @default(90)
+  
+  apiKeys              ApiKey[]
+  webhookEndpoints     WebhookEndpoint[]
+  integrations         IntegrationConnection[]
+
+  @@index([stripeCustomerId])
+  @@index([subscriptionStatus])
+  @@index([createdAt])
+  @@index([ssoDomain])
+  @@index([customDomain])
+}
+
+model AnalyticsEvent {
+  id          String    @id @default(cuid())
+  eventType   String
+  workspaceId String
+  userId      String?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, eventType])
+  @@index([createdAt])
+}
+
+model Membership {
+  id          String    @id @default(cuid())
+  role        Role      @default(MEMBER)
+  userId      String
+  workspaceId String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String    @default("TODO")
+  priority    String    @default("MEDIUM")
+  dueDate     DateTime?
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assigneeId  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([projectId])
+}
+
+model AIUsage {
+  id          String    @id @default(cuid())
+  tokensUsed  Int
+  modelName   String
+  purpose     String
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId, createdAt])
+}
+
+model AutomationExecution {
+  id          String    @id @default(cuid())
+  ruleId      String
+  status      String
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId, createdAt])
+}
+
+model AutomationRule {
+  id          String    @id @default(cuid())
+  name        String
+  trigger     String
+  action      String
+  isActive    Boolean   @default(true)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+model ActivityLog {
+  id          String    @id @default(cuid())
+  action      String
+  entityType  String
+  entityId    String
+  metadata    Json?
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId, createdAt])
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  key         String    @unique
+  name        String?
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  scopes      String[]  @default([])
+
+  @@index([workspaceId])
+  @@index([key])
+}
+
+model WebhookEndpoint {
+  id          String    @id @default(cuid())
+  url         String
+  secret      String?   
+  events      String[]  
+  isActive    Boolean   @default(true)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  deliveryLogs WebhookDeliveryLog[]
+
+  @@index([workspaceId])
+}
+
+model WebhookDeliveryLog {
+  id                String          @id @default(cuid())
+  webhookEndpointId String
+  webhookEndpoint   WebhookEndpoint @relation(fields: [webhookEndpointId], references: [id], onDelete: Cascade)
+  eventId           String
+  eventType         String
+  payload           Json
+  statusCode        Int
+  responseBody      String?
+  success           Boolean
+  createdAt         DateTime        @default(now())
+  durationMs        Int
+
+  @@index([webhookEndpointId])
+}
+
+model IntegrationConnection {
+  id            String    @id @default(cuid())
+  provider      String    
+  accessToken   String?   
+  refreshToken  String?   
+  expiresAt     DateTime?
+  metadata      Json?     
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([workspaceId, provider])
+}
