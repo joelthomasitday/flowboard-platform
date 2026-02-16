@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Download, Printer, TrendingUp, ShieldCheck, Zap, X, Loader2, Sparkles, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Download, Printer, X, Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 export function NarrativeReportView() {
@@ -44,14 +43,10 @@ export function NarrativeReportView() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8 p-12 bg-[#FDFCF7]">
-        <div className="relative">
-          <div className="absolute inset-0 blur-3xl bg-light-green/30 rounded-full animate-pulse" />
-          <Loader2 className="w-16 h-16 text-deep-blue animate-spin relative z-10" />
-        </div>
-        <div className="text-center space-y-3 relative z-10">
-           <p className="font-syne font-black text-xl text-deep-blue uppercase tracking-tighter">Synthesizing Workspace State</p>
-           <p className="font-mono text-[10px] text-deep-blue/40 uppercase tracking-[0.4em] animate-pulse">Large Language Model Orchestration...</p>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
+          <p className="text-gray-500 text-sm">Generating report...</p>
         </div>
       </div>
     );
@@ -59,15 +54,17 @@ export function NarrativeReportView() {
 
   if (error) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center p-12 text-center space-y-6 bg-[#FDFCF7]">
-        <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
-          <X className="w-10 h-10 text-red-400" />
+      <div className="min-h-screen flex items-center justify-center bg-white p-8">
+        <div className="max-w-md w-full bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <h3 className="text-red-800 font-semibold mb-2">Report Generation Failed</h3>
+          <p className="text-red-600 text-sm mb-4">{error}</p>
+          <button 
+            onClick={fetchReport}
+            className="px-4 py-2 bg-white border border-red-200 text-red-700 rounded hover:bg-red-50 text-sm font-medium transition-colors"
+          >
+            Retry
+          </button>
         </div>
-        <div className="space-y-2">
-          <p className="text-deep-blue font-bold text-lg">Orchestration Interrupted</p>
-          <p className="text-deep-blue/50 text-sm max-w-md mx-auto">{error}</p>
-        </div>
-        <button onClick={fetchReport} className="px-8 py-3 bg-deep-blue text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:scale-105 transition-transform">Re-attempt Synthesis</button>
       </div>
     );
   }
@@ -75,113 +72,104 @@ export function NarrativeReportView() {
   if (!report) return null;
 
   return (
-    <div className="min-h-screen bg-[#FDFCF7] text-deep-blue selection:bg-light-green/20 pb-20">
-      {/* Top Header/Nav */}
-      <div className="sticky top-0 z-50 bg-[#FDFCF7]/95 backdrop-blur-md border-b border-deep-blue/5 px-6 md:px-12 py-6 flex justify-between items-center">
-        <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="p-2 hover:bg-deep-blue/5 rounded-full transition-colors text-deep-blue/40 hover:text-deep-blue">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div className="h-8 w-px bg-deep-blue/5" />
-          <div className="space-y-0.5">
-            <h1 className="font-instrument-serif text-2xl md:text-3xl italic leading-none">Executive Narrative</h1>
-            <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-deep-blue/30">
-              Confidential · AI-Synthesized Intelligence · {new Date().getFullYear()}
-            </p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans py-12 px-4 sm:px-6 lg:px-8 print:bg-white print:p-0">
+      <div className="max-w-4xl mx-auto bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden print:shadow-none print:border-none">
         
-        <div className="flex items-center gap-4">
-          <button className="hidden sm:flex items-center gap-2 px-4 py-2 hover:bg-deep-blue/5 rounded-lg text-[10px] font-black uppercase tracking-widest text-deep-blue/40 hover:text-deep-blue transition-all">
-            <Printer className="w-4 h-4" />
-            <span>Print</span>
-          </button>
-          <button className="flex items-center gap-2 px-6 py-3 bg-deep-blue text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-deep-blue-dark transition-all shadow-lg shadow-deep-blue/20">
-            <Download className="w-4 h-4" />
-            <span>Export PDF</span>
-          </button>
+        {/* Header Actions */}
+        <div className="bg-gray-50 border-b border-gray-200 px-8 py-4 flex justify-between items-center print:hidden">
+          <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </Link>
+          <div className="flex gap-3">
+             <button onClick={() => window.print()} className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded border border-gray-300 transition-colors">
+              <Printer className="w-4 h-4" />
+              Print
+            </button>
+            <button 
+              onClick={() => window.print()}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Export PDF
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Main Content Area */}
-      <div className="max-w-5xl mx-auto px-6 md:px-10 lg:px-12 py-12 md:py-20 lg:py-24 space-y-20 md:space-y-32">
-        {/* Summary Section */}
-        <section className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
-          <h3 className="font-syne font-bold text-[10px] md:text-[11px] uppercase tracking-[0.3em] text-deep-blue/20 mb-6 md:mb-10 flex items-center gap-4">
-            <span className="w-8 md:w-12 h-px bg-deep-blue/10" />
-            01. Strategic Summary
-          </h3>
-          <div className="relative">
-            <p className="font-instrument-serif text-2xl md:text-4xl lg:text-5xl leading-[1.3] text-deep-blue/90 first-letter:text-7xl md:first-letter:text-8xl lg:first-letter:text-9xl first-letter:font-bold first-letter:mr-4 md:first-letter:mr-6 first-letter:float-left first-letter:text-deep-blue first-letter:leading-[0.8] first-letter:mt-1">
-              {report.summary}
-            </p>
-          </div>
-        </section>
-
-        {/* Metrics Grid */}
-        <section className="animate-in fade-in slide-in-from-bottom-8 delay-300 duration-1000">
-          <h3 className="font-syne font-bold text-[10px] md:text-[11px] uppercase tracking-[0.3em] text-deep-blue/20 mb-6 md:mb-10 flex items-center gap-4">
-            <span className="w-8 md:w-12 h-px bg-deep-blue/10" />
-            02. Performance Deltas
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 lg:gap-10">
-            {[
-              { label: "Productivity Delta", val: `+${report.productivityDelta}%`, desc: "Commit density & PR throughput", icon: <TrendingUp className="w-4 h-4 text-light-green" /> },
-              { label: "Risk Mitigation", val: `-${report.riskReduction}%`, desc: "Predicted bottleneck bypass", icon: <ShieldCheck className="w-4 h-4 text-soft-blue" /> },
-              { label: "Autonomy Yield", val: `${report.timeSaved}h`, desc: "Repetitive task automation", icon: <Zap className="w-4 h-4 text-light-green" /> },
-              { label: "Capital Efficiency", val: `$${report.automationSavings.toLocaleString()}`, desc: "Normalized engineering cost", icon: null }
-            ].map((metric, i) => (
-               <div key={i} className="group border-l border-deep-blue/10 pl-6 py-2 hover:border-light-green transition-all duration-500">
-                  <p className="font-mono text-[9px] text-deep-blue/40 uppercase mb-2 tracking-[0.15em] font-bold">{metric.label}</p>
-                  <div className="flex items-baseline gap-3 mb-1">
-                    <span className="text-3xl md:text-4xl lg:text-5xl font-syne font-black text-deep-blue group-hover:text-light-green transition-colors leading-none tracking-tighter">{metric.val}</span>
-                    {metric.icon && <div className="p-1 px-1.5 bg-white shadow-sm border border-deep-blue/5 rounded-md shrink-0 translate-y-[-4px]">{metric.icon}</div>}
-                  </div>
-                  <p className="text-[10px] font-medium text-deep-blue/40 uppercase tracking-wide leading-relaxed">{metric.desc}</p>
-               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Key Insights Section */}
-        <section className="bg-deep-blue p-8 md:p-20 lg:p-24 rounded-[40px] md:rounded-[60px] lg:rounded-[80px] shadow-2xl relative overflow-hidden animate-in fade-in slide-in-from-bottom-8 delay-500 duration-1000">
-          <div className="absolute top-0 right-0 w-full h-full bg-linear-to-br from-soft-blue/5 to-transparent pointer-events-none" />
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-soft-blue/10 blur-[120px] rounded-full pointer-events-none" />
+        {/* Report Content */}
+        <div className="p-8 md:p-12 space-y-8">
           
-          <h3 className="font-syne font-bold text-[10px] md:text-[11px] uppercase tracking-[0.3em] text-white/40 mb-12 md:mb-16 relative z-10 flex items-center gap-6">
-            <span className="w-12 h-px bg-white/20" />
-            03. Neural Insights
-          </h3>
-          <div className="space-y-10 md:space-y-14 relative z-10">
-            {report.topInsights.map((insight: string, idx: number) => (
-              <div key={idx} className="flex gap-6 md:gap-10 items-start pb-10 md:pb-14 border-b border-white/5 last:border-0 group hover:border-white/10 transition-all">
-                <span className="font-mono text-[10px] text-white/20 mt-2 font-black">[{String(idx + 1).padStart(2, '0')}]</span>
-                <p className="text-white/80 font-syne font-semibold text-xl md:text-2xl lg:text-3xl group-hover:text-white transition-all leading-snug tracking-tight max-w-3xl">
-                  {insight}
-                </p>
+          {/* Document Header */}
+          <header className="border-b border-gray-200 pb-8 space-y-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Executive Narrative Report</h1>
+                <p className="text-gray-500 mt-1">FlowBoard Intelligence System</p>
               </div>
-            ))}
-          </div>
-        </section>
+              <div className="text-right text-sm text-gray-500 space-y-1">
+                <p>Date: {new Date().toLocaleDateString()}</p>
+                <p>Workspace: Global</p>
+                <p>Ref: {Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
+              </div>
+            </div>
+          </header>
 
-        {/* Footer Section */}
-        <section className="pt-20 pb-8 flex flex-col items-center text-center space-y-10 animate-in fade-in duration-1000">
-           <div className="inline-flex items-center gap-4 px-6 py-3 bg-deep-blue/5 rounded-full border border-deep-blue/5">
-              <Sparkles className="w-4 h-4 text-deep-blue/30" />
-              <span className="font-instrument-serif font-bold text-2xl italic tracking-tight">FlowBoard Intelligence</span>
-           </div>
-           
-           <div className="space-y-3">
-              <p className="font-mono text-[9px] text-deep-blue/30 uppercase tracking-[0.5em] font-black">
-                LEGAL ATTESTATION
-              </p>
-              <p className="max-w-xl text-[10px] font-medium text-deep-blue/40 leading-relaxed uppercase tracking-widest px-4">
-                This report is autonomously generated by FlowBoard V4 Neural Orchestration. 
-                Data points are synthesized from active workspace telemetry and verified through 
-                multi-agent consensus. Distribution is limited to authorized stakeholders.
-              </p>
-           </div>
-        </section>
+          {/* Executive Summary */}
+          <section>
+            <h2 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-2 mb-6 uppercase tracking-wider">01. Executive Summary</h2>
+            <div className="prose prose-gray max-w-none text-gray-700 leading-relaxed">
+              <p>{report.summary}</p>
+            </div>
+          </section>
+
+          {/* Key Metrics Table */}
+          <section>
+             <h2 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-2 mb-6 uppercase tracking-wider">02. Key Performance Indicators</h2>
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 bg-gray-50 rounded border border-gray-100">
+                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Productivity</p>
+                  <p className="text-2xl font-semibold text-gray-900">+{report.productivityDelta}%</p>
+                  <p className="text-xs text-gray-500 mt-1">Commit density & PRs</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded border border-gray-100">
+                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Risk Reduction</p>
+                  <p className="text-2xl font-semibold text-gray-900">-{report.riskReduction}%</p>
+                   <p className="text-xs text-gray-500 mt-1">Bottleneck mitigation</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded border border-gray-100">
+                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Time Saved</p>
+                  <p className="text-2xl font-semibold text-gray-900">{report.timeSaved}h</p>
+                   <p className="text-xs text-gray-500 mt-1">Automated tasks</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded border border-gray-100">
+                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Savings</p>
+                  <p className="text-2xl font-semibold text-gray-900">${report.automationSavings.toLocaleString()}</p>
+                   <p className="text-xs text-gray-500 mt-1">Estimated efficiency</p>
+                </div>
+             </div>
+          </section>
+
+          {/* Deep Insights */}
+          <section>
+             <h2 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-2 mb-6 uppercase tracking-wider">03. Strategic Insights</h2>
+             <div className="space-y-4">
+                {report.topInsights.map((insight: string, idx: number) => (
+                  <div key={idx} className="flex gap-4 items-start">
+                    <span className="shrink-0 w-6 h-6 flex items-center justify-center bg-gray-100 rounded-full text-xs font-medium text-gray-600 mt-0.5">
+                      {idx + 1}
+                    </span>
+                    <p className="text-gray-700 leading-relaxed">{insight}</p>
+                  </div>
+                ))}
+             </div>
+          </section>
+          
+          {/* Footer */}
+          <footer className="pt-12 mt-12 border-t border-gray-200 text-center text-xs text-gray-400">
+            <p>Generated by FlowBoard Intelligence System. Confidential.</p>
+          </footer>
+
+        </div>
       </div>
     </div>
   );

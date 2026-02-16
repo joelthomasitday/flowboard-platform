@@ -1,13 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, ArrowRight, TrendingUp, AlertCircle, Zap } from "lucide-react";
+import { Sparkles, ArrowRight, TrendingUp, AlertCircle, Zap, Loader2, Check } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { NarrativeReport } from "@/components/system/NarrativeReport";
 import { useDemoMode } from "@/context/DemoContext";
+import { toast } from "sonner";
 
 interface InsightProps {
   productivity: number;
@@ -17,10 +18,39 @@ interface InsightProps {
 
 export function AIInsightPanel({ productivity: initialProductivity = 92, risk: initialRisk = 12, workload: initialWorkload = 74 }: Partial<InsightProps>) {
   const { isDemoMode } = useDemoMode();
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [hasOptimized, setHasOptimized] = useState(false);
   
-  const productivity = isDemoMode ? initialProductivity + 6 : initialProductivity;
-  const risk = isDemoMode ? Math.max(0, initialRisk - 8) : initialRisk;
-  const workload = initialWorkload;
+  // Initialize metrics state based on props and demo mode
+  const [metrics, setMetrics] = useState({
+    productivity: isDemoMode ? initialProductivity + 6 : initialProductivity,
+    risk: isDemoMode ? Math.max(0, initialRisk - 8) : initialRisk,
+    workload: initialWorkload
+  });
+
+  const handleOptimize = () => {
+    if (hasOptimized) return;
+    
+    setIsOptimizing(true);
+    
+    // Simulate complex AI heuristic processing
+    setTimeout(() => {
+      setIsOptimizing(false);
+      setHasOptimized(true);
+      
+      // Update metrics to show improvement
+      setMetrics(prev => ({
+        productivity: Math.min(100, prev.productivity + 4),
+        risk: Math.max(0, prev.risk - 5),
+        workload: Math.max(0, prev.workload - 8)
+      }));
+
+      toast.success("Schedule Optimized Successfully", {
+        description: "AI has reallocated 4 hours for deep work blocks.",
+        duration: 4000,
+      });
+    }, 2000);
+  };
 
   const container = {
     hidden: { opacity: 0 },
@@ -100,17 +130,17 @@ export function AIInsightPanel({ productivity: initialProductivity = 92, risk: i
             { 
               icon: <TrendingUp className="w-3.5 h-3.5" />, 
               text: "Morning focus hours (9-11 AM) show 2.4x higher commit density.", 
-              score: productivity 
+              score: metrics.productivity 
             },
             { 
               icon: <Zap className="w-3.5 h-3.5" />, 
               text: "Automation potential identified in 3 repetitive frontend workflows.",
-              score: workload 
+              score: metrics.workload 
             },
             { 
               icon: <AlertCircle className="w-3.5 h-3.5" />, 
               text: "Deadline risk for 'Phase 2' remains low but trending upward (+3%).", 
-              score: risk 
+              score: metrics.risk 
             },
           ].map((bullet, idx) => (
             <motion.div 
@@ -157,10 +187,33 @@ export function AIInsightPanel({ productivity: initialProductivity = 92, risk: i
         <motion.div variants={item} className="pt-2 space-y-3">
           <NarrativeReport />
           <Button 
-            className="w-full h-14 bg-white border border-soft-blue/20 text-deep-blue hover:bg-soft-blue/5 hover:border-soft-blue/40 hover:-translate-y-1 transition-all duration-300 rounded-xl shadow-soft font-syne font-bold group"
+            onClick={handleOptimize}
+            disabled={isOptimizing || hasOptimized}
+            className={cn(
+              "w-full h-14 border transition-all duration-300 rounded-xl shadow-soft font-syne font-bold group relative overflow-hidden",
+              hasOptimized 
+                ? "bg-light-green/20 border-light-green text-deep-blue hover:bg-light-green/30" 
+                : "bg-white border-soft-blue/20 text-deep-blue hover:bg-soft-blue/5 hover:border-soft-blue/40"
+            )}
           >
-            Optimize Schedule
-            <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <span className={cn("flex items-center justify-center gap-2", isOptimizing && "opacity-0")}>
+              {hasOptimized ? (
+                <>
+                  Schedule Optimized <Check className="w-4 h-4" />
+                </>
+              ) : (
+                <>
+                  Optimize Schedule
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </span>
+            
+            {isOptimizing && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="w-5 h-5 animate-spin text-deep-blue" />
+              </div>
+            )}
           </Button>
         </motion.div>
       </motion.div>
