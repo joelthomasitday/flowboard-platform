@@ -36,6 +36,11 @@ export const metadata: Metadata = {
   description: siteConfig.description,
   keywords: ["project management", "task management", "SaaS", "productivity", "FlowBoard"],
   authors: [{ name: "FlowBoard" }],
+  icons: {
+    icon: "/assets/logo.svg",
+    shortcut: "/assets/logo.svg",
+    apple: "/assets/logo.svg",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
