@@ -51,6 +51,7 @@ export async function GET() {
       return {
         id: p.id,
         label: p.name,
+        description: p.description,
         progress,
         status: progress === 100 ? "Finished" : (progress > 0 ? "In Progress" : "Starting"),
         ...variety

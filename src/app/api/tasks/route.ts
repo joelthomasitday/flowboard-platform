@@ -5,11 +5,10 @@ import { Task } from '@prisma/client';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { title, priority, status } = body;
+    const { title, priority, status, projectId } = body;
 
-    // For now, we'll use a hardcoded project ID or find the first one
-    // In a real app, this would come from the URL or user session
-    let project = await db.project.findFirst();
+    // Use provided projectId or fallback to first one
+    let project = projectId ? { id: projectId } : await db.project.findFirst();
     
     if (!project) {
         // Create a default project if none exists (fallback)
@@ -45,7 +44,11 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
     try {
+        const { searchParams } = new URL(req.url);
+        const projectId = searchParams.get('projectId');
+        
         const tasks = await db.task.findMany({
+            where: projectId ? { projectId } : {},
             orderBy: { createdAt: 'desc' }
         });
         

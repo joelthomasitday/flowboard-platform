@@ -1,4 +1,5 @@
 import { ProjectView } from "@/components/dashboard/ProjectView";
+import { Suspense } from "react";
 
 export const metadata = {
   title: "Projects | FlowBoard",
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function ProjectsPage() {
-  return <ProjectView />;
+  return (
+    <Suspense fallback={<div className="p-10 text-center opacity-50">Loading Project Engine...</div>}>
+      <ProjectView />
+    </Suspense>
+  );
 }

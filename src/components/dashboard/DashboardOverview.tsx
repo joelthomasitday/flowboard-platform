@@ -58,13 +58,14 @@ export function DashboardOverview() {
     day: 'numeric' 
   });
 
-  const handleProjectClick = (label: string) => {
-    console.log(`[DashboardOverview] Project clicked: ${label}`);
-    if (label === "Design System") {
-      router.push("/dashboard/projects");
-    } else {
-      toast(`Navigation to ${label} details coming soon!`);
-    }
+  const handleProjectClick = (project: any) => {
+    console.log(`[DashboardOverview] Project clicked: ${project.label}`);
+    const params = new URLSearchParams();
+    params.set('id', project.id);
+    params.set('name', project.label);
+    if (project.description) params.set('description', project.description);
+    
+    router.push(`/dashboard/projects?${params.toString()}`);
   };
 
   const handleViewAll = () => {
@@ -186,7 +187,7 @@ export function DashboardOverview() {
                     return (
                         <div 
                         key={i} 
-                        onClick={() => handleProjectClick(project.label)}
+                        onClick={() => handleProjectClick(project)}
                         className="group relative p-6 rounded-xl bg-white border border-transparent shadow-sm hover:shadow-elevated hover:border-soft-blue/20 transition-all duration-300 hover:-translate-y-1 cursor-pointer"
                         >
                         <div className="flex justify-between items-start mb-6">

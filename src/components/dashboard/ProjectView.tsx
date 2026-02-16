@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { 
@@ -27,21 +27,48 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Upload, FileText, CheckCircle, Trash2 as LucideTrash2 } from "lucide-react";
 import { useActivity } from "@/context/ActivityContext";
+import { useSearchParams } from "next/navigation";
 
 export function ProjectView() {
-  console.log("[ProjectView] Rendering...");
-  
+  const searchParams = useSearchParams();
   const { addEvent } = useActivity();
+  
+  const projectIdFromUrl = searchParams.get('id');
+  const projectName = searchParams.get('name') || "Design System";
+  const projectDesc = searchParams.get('description') || "Core architectural tokens, component library, and brand identity refactor.";
 
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Task Editing State
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<any>(null);
   const [editText, setEditText] = useState("");
   const [editPriority, setEditPriority] = useState("medium");
   const editInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Fetch Tasks
+  useEffect(() => {
+    const fetchTasks = async () => {
+      setLoading(true);
+      try {
+        const url = projectIdFromUrl 
+          ? `/api/tasks?projectId=${projectIdFromUrl}` 
+          : '/api/tasks';
+        const res = await fetch(url);
+        const data = await res.json();
+        setTasks(data);
+      } catch (err) {
+        console.error("Failed to fetch tasks", err);
+        toast.error("Failed to load project tasks");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTasks();
+  }, [projectIdFromUrl]);
 
   // Focus input when editing starts
   useEffect(() => {
@@ -50,60 +77,15 @@ export function ProjectView() {
     }
   }, [editingId]);
 
-  // Initial default tasks reference
-  const DEFAULT_TASKS = [
-    { id: 1, title: "Finalize core design system tokens", status: "completed", priority: "high", time: "2h left", assignee: "Alex" },
-    { id: 2, title: "Implement responsive dashboard sidebar", status: "in-progress", priority: "medium", time: "4h left", assignee: "Sarah" },
-    { id: 3, title: "Define micro-interaction motion curves", status: "pending", priority: "low", time: "1h left", assignee: "Mike" },
-    { id: 4, title: "Refactor project view for editorial aesthetic", status: "pending", priority: "high", time: "3h left", assignee: "You" },
-    { id: 5, title: "Sync with stakeholders on font choices", status: "completed", priority: "medium", time: "Done", assignee: "Lisa" },
-    { id: 6, title: "Update API documentation for v2", status: "pending", priority: "medium", time: "1d left", assignee: "Tom" },
-  ];
-
-  const [tasks, setTasks] = useState(DEFAULT_TASKS);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  // Load from local storage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('flowboard-tasks');
-    if (saved) {
-      try {
-        setTasks(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse tasks", e);
-      }
-    }
-    setIsLoaded(true);
-  }, []);
-
-  // Save to local storage whenever tasks change
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('flowboard-tasks', JSON.stringify(tasks));
-    }
-  }, [tasks, isLoaded]);
-
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      console.log(`[ProjectView] Uploading file: ${file.name}`);
       setIsUploading(true);
       toast.info(`Uploading ${file.name}...`);
       
-      // Simulate real upload & connection logic
       setTimeout(() => {
         setIsUploading(false);
-        const newTaskId = tasks.length + 1;
-        setTasks([{
-          id: newTaskId,
-          title: `Imported: ${file.name.split('.')[0]} Tasks`,
-          status: "pending",
-          priority: "high",
-          time: "Just now",
-          assignee: "You"
-        }, ...tasks]);
         toast.success("Task file connected and uploaded successfully!");
-        
         addEvent({
           user: { name: "You" },
           action: "imported tasks from",
@@ -114,20 +96,45 @@ export function ProjectView() {
     }
   };
 
-  const triggerUpload = () => {
-    fileInputRef.current?.click();
-  };
+  const triggerUpload = () => fileInputRef.current?.click();
 
-  const [phases, setPhases] = useState([
-    { name: "Discovery", status: "completed", progress: 100 },
-    { name: "Design", status: "in-progress", progress: 65 },
-    { name: "Development", status: "pending", progress: 0 },
-    { name: "Testing", status: "pending", progress: 0 },
-  ]);
+  const phases = React.useMemo(() => {
+    const total = tasks.length;
+    if (total === 0) return [
+      { name: "Discovery", status: "pending", progress: 0 },
+      { name: "Design", status: "pending", progress: 0 },
+      { name: "Development", status: "pending", progress: 0 },
+      { name: "Testing", status: "pending", progress: 0 },
+    ];
+
+    const completed = tasks.filter(t => t.status === 'completed').length;
+    const overallProgress = (completed / total) * 100;
+    
+    const getStatus = (p: number) => p === 100 ? 'completed' : (p > 0 ? 'in-progress' : 'pending');
+
+    // Strategic breakdown of phases based on overall task progress
+    const discProg = 100; // If project exists with tasks, discovery is done
+    const designProg = Math.min(100, Math.max(0, (overallProgress / 30) * 100));
+    const devProg = overallProgress <= 30 ? 0 : Math.min(100, Math.max(0, ((overallProgress - 30) / 40) * 100));
+    const testProg = overallProgress <= 70 ? 0 : Math.min(100, Math.max(0, ((overallProgress - 70) / 30) * 100));
+
+    return [
+      { name: "Discovery", status: getStatus(discProg), progress: discProg },
+      { name: "Design", status: getStatus(designProg), progress: Math.round(designProg) },
+      { name: "Development", status: getStatus(devProg), progress: Math.round(devProg) },
+      { name: "Testing", status: getStatus(testProg), progress: Math.round(testProg) },
+    ];
+  }, [tasks]);
 
   const handleNewObjective = () => {
-    console.log("[ProjectView] New Objective clicked");
-    const newId = Date.now();
+    // Safety: Check if we already have an empty temp task
+    const existingTemp = tasks.find(t => typeof t.id === 'string' && t.id.startsWith('temp-') && !t.title);
+    if (existingTemp) {
+      setEditingId(existingTemp.id);
+      return;
+    }
+
+    const newId = 'temp-' + Date.now();
     const newTask = {
       id: newId,
       title: "",
@@ -140,7 +147,6 @@ export function ProjectView() {
     setEditingId(newId);
     setEditText("");
     setEditPriority("medium");
-    // toast.success("New objective created!"); // Delay toast until saved
   };
 
   const startEdit = (task: any) => {
@@ -149,62 +155,92 @@ export function ProjectView() {
     setEditPriority(task.priority);
   };
 
-  const saveEdit = (id: number) => {
+  const saveEdit = async (id: any) => {
+    if (isSaving) return;
     if (!editText.trim()) {
       toast.error("Task title cannot be empty");
       return;
     }
-    setTasks(tasks.map(t => t.id === id ? { ...t, title: editText, priority: editPriority } : t));
-    
-    // Check if this was a new task (we don't have a reliable way to know if it was *just* created vs edited unless we track it, 
-    // but for now let's assume if it has an ID generated by Date.now() roughly recently it's new, OR distinct from initial set. 
-    // Actually, simpler: just log "updated" or "created". 
-    // Since we are reusing saveEdit for both, we can check if the task title was empty before? No, we don't have prev state here easily.
-    // Let's just say "updated" for now, or "defined objective" if it matches the editingId logic.
-    
-    addEvent({
-       user: { name: "You" },
-       action: "updated objective",
-       target: editText,
-       type: "edit"
-    });
 
-    setEditingId(null);
-    toast.success("Task updated successfully");
+    setIsSaving(true);
+    try {
+        const isNew = String(id).startsWith('temp-');
+        const method = isNew ? 'POST' : 'PUT';
+        const payload = isNew 
+            ? { title: editText, priority: editPriority, projectId: projectIdFromUrl }
+            : { id, title: editText, priority: editPriority };
+
+        const res = await fetch('/api/tasks', {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const savedTask = await res.json();
+
+        if (isNew) {
+            setTasks(tasks.map(t => t.id === id ? { ...savedTask, status: 'pending', priority: editPriority.toLowerCase(), time: 'Just now', assignee: 'You' } : t));
+        } else {
+            setTasks(tasks.map(t => t.id === id ? { ...t, title: editText, priority: editPriority.toLowerCase() } : t));
+        }
+
+        addEvent({
+            user: { name: "You" },
+            action: isNew ? "defined objective" : "updated objective",
+            target: editText,
+            type: isNew ? "ai" : "edit"
+        });
+
+        setEditingId(null);
+        toast.success(isNew ? "Objective created" : "Task updated");
+    } catch (err) {
+        toast.error("Failed to save changes");
+    } finally {
+        setIsSaving(false);
+    }
   };
 
-  const cancelEdit = (id: number) => {
-    // If it was a new task (empty title) and we cancel, delete it
-    const task = tasks.find(t => t.id === id);
-    if (task && !task.title.trim()) {
+
+  const cancelEdit = (id: any) => {
+    if (String(id).startsWith('temp-')) {
       setTasks(tasks.filter(t => t.id !== id));
     }
     setEditingId(null);
   };
 
-  const deleteTask = (id: number) => {
-    setTasks(tasks.filter(t => t.id !== id));
-    toast.success("Task deleted");
+  const deleteTask = async (id: any) => {
+    try {
+        await fetch(`/api/tasks?id=${id}`, { method: 'DELETE' });
+        setTasks(tasks.filter(t => t.id !== id));
+        toast.success("Task deleted");
+    } catch (err) {
+        toast.error("Failed to delete task");
+    }
   };
 
-  const toggleTaskCompletion = (id: number) => {
-    console.log(`[ProjectView] Toggling task completion for ID: ${id}`);
-    setTasks(tasks.map(t => 
-      t.id === id 
-        ? { ...t, status: t.status === "completed" ? "pending" : "completed" } 
-        : t
-    ));
-    toast.info("Task status updated");
-    
+  const toggleTaskCompletion = async (id: any) => {
     const task = tasks.find(t => t.id === id);
-    if (task) {
-      const newStatus = task.status === "completed" ? "pending" : "completed";
-      addEvent({
-        user: { name: "You" },
-        action: newStatus === "completed" ? "completed task" : "reopened task",
-        target: task.title,
-        type: "status"
-      });
+    if (!task) return;
+
+    const newStatus = task.status === "completed" ? "pending" : "completed";
+    
+    try {
+        await fetch('/api/tasks', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, status: newStatus })
+        });
+
+        setTasks(tasks.map(t => t.id === id ? { ...t, status: newStatus } : t));
+        toast.info("Task status updated");
+        
+        addEvent({
+          user: { name: "You" },
+          action: newStatus === "completed" ? "completed task" : "reopened task",
+          target: task.title,
+          type: "status"
+        });
+    } catch (err) {
+        toast.error("Failed to update status");
     }
   };
 
@@ -237,15 +273,17 @@ export function ProjectView() {
                 Active Project
               </Badge>
               <div className="h-px w-8 bg-white/20" />
-              <span className="font-mono text-[10px] uppercase tracking-[0.3em] opacity-60">ID: FB-2026-004</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.3em] opacity-60">
+                {projectIdFromUrl ? `ID: ${projectIdFromUrl.slice(0, 8).toUpperCase()}` : "Global Workspace"}
+              </span>
             </div>
             
             <div className="space-y-3">
               <h1 className="font-syne text-5xl lg:text-7xl font-bold tracking-tight leading-[0.9] text-transparent bg-clip-text bg-linear-to-r from-cream via-white to-cream/80">
-                Brand Identity<br />& Product Refactor
+                {projectName}
               </h1>
               <p className="text-lg text-cream/70 font-medium leading-relaxed max-w-xl">
-                Complete overhaul of the digital workspace environment, focusing on architectural calmness and high-precision typography.
+                {projectDesc}
               </p>
             </div>
 
