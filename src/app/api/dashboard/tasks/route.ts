@@ -30,7 +30,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { title, projectId } = body;
+    const { title, description, status, priority, dueDate, projectId } = body;
 
     // Default to the first project if not provided
     let targetProjectId = projectId;
@@ -43,10 +43,36 @@ export async function POST(req: Request) {
     const task = await db.task.create({
       data: {
         title,
-        description: "Added from dashboard",
+        description: description || "Added from dashboard",
+        status: status || "TODO",
+        priority: priority || "MEDIUM",
+        dueDate: dueDate ? new Date(dueDate) : null,
         projectId: targetProjectId,
-        status: "TODO",
-        priority: "MEDIUM"
+      }
+    });
+
+    return NextResponse.json(task);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const body = await req.json();
+    const { id, title, description, status, priority, dueDate, projectId } = body;
+
+    if (!id) throw new Error("Task ID is required for updates");
+
+    const task = await db.task.update({
+      where: { id },
+      data: {
+        title,
+        description,
+        status,
+        priority,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        projectId
       }
     });
 
