@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    // 1. Get Workspace (first one for now)
-    const workspace = await db.workspace.findFirst({
+    const { searchParams } = new URL(req.url);
+    const workspaceId = searchParams.get('workspaceId');
+
+    if (!workspaceId) {
+       return NextResponse.json({ error: 'Workspace ID required' }, { status: 400 });
+    }
+
+    // 1. Get Workspace
+    const workspace = await db.workspace.findUnique({
+      where: { id: workspaceId },
       include: {
         projects: {
           include: {
@@ -21,7 +29,7 @@ export async function GET() {
     });
 
     if (!workspace) {
-      return NextResponse.json({ error: 'No workspace found' }, { status: 404 });
+      return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
     }
 
     // 2. Fetch Tasks to calculate progress

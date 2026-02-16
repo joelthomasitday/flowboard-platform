@@ -16,7 +16,7 @@ import { useSidebar } from "@/hooks/use-sidebar";
 import { siteConfig } from "@/lib/constants";
 import { WorkspaceSwitcher } from "../system/WorkspaceSwitcher";
 import { RoleBadge } from "../system/RoleBadge";
-import { getActiveWorkspace } from "@/lib/workspace-engine";
+import { useWorkspaces } from "@/context/WorkspaceContext";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Overview" },
@@ -29,7 +29,9 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
-  const activeWs = getActiveWorkspace();
+  const { activeWorkspace: activeWs } = useWorkspaces();
+
+  console.log('[Sidebar] Render. Active Workspace:', activeWs.name);
 
   return (
     <aside

@@ -59,6 +59,7 @@ export const metadata: Metadata = {
 import { CommandPalette } from "@/components/system/CommandPalette";
 import { Toaster } from "sonner";
 import { DemoProvider } from "@/context/DemoContext";
+import { WorkspaceProvider } from "@/context/WorkspaceContext";
 
 export default function RootLayout({
   children,
@@ -71,11 +72,13 @@ export default function RootLayout({
       className={`${inter.variable} ${syne.variable} ${instrumentSerif.variable} ${geistMono.variable}`}
     >
       <body className="min-h-screen font-body antialiased">
-        <DemoProvider>
-          <CommandPalette />
-          <Toaster />
-          {children}
-        </DemoProvider>
+        <WorkspaceProvider>
+          <DemoProvider>
+            <CommandPalette />
+            <Toaster />
+            {children}
+          </DemoProvider>
+        </WorkspaceProvider>
       </body>
     </html>
   );

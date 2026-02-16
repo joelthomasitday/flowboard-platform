@@ -42,7 +42,10 @@ interface Project {
   name: string;
 }
 
+import { useWorkspaces } from "@/context/WorkspaceContext";
+
 export function TaskManagement() {
+  const { activeWorkspace } = useWorkspaces();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,13 +58,15 @@ export function TaskManagement() {
   const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
-    fetchTasks();
-    fetchProjects();
-  }, []);
+    if (activeWorkspace?.id) {
+      fetchTasks();
+      fetchProjects();
+    }
+  }, [activeWorkspace?.id]);
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch("/api/projects");
+      const res = await fetch(`/api/projects?workspaceId=${activeWorkspace.id}`);
       if (!res.ok) {
         console.warn("Projects API returned", res.status);
         return;
@@ -79,7 +84,7 @@ export function TaskManagement() {
     try {
       setIsLoading(true);
       console.log("[TaskManagement] Fetching tasks from real DB...");
-      const res = await fetch("/api/dashboard/tasks");
+      const res = await fetch(`/api/dashboard/tasks?workspaceId=${activeWorkspace.id}`);
       if (!res.ok) {
         console.error("Tasks API returned", res.status);
         toast.error("Failed to load tasks (server error)");

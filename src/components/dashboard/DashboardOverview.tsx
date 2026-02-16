@@ -27,17 +27,19 @@ import { DataVizSystem } from "./DataVizSystem";
 import { PresenceSystem } from "@/components/system/PresenceSystem";
 import { ActivityFeed } from "@/components/system/ActivityFeed";
 import { useDemoMode } from "@/context/DemoContext";
+import { useWorkspaces } from "@/context/WorkspaceContext";
 
 export function DashboardOverview() {
   const router = useRouter();
   const { isDemoMode } = useDemoMode();
+  const { activeWorkspace } = useWorkspaces();
   const [data, setData] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
   
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/dashboard/overview');
+        const res = await fetch(`/api/dashboard/overview?workspaceId=${activeWorkspace.id}`);
         const json = await res.json();
         setData(json);
       } catch (err) {
@@ -47,7 +49,7 @@ export function DashboardOverview() {
       }
     };
     fetchData();
-  }, []);
+  }, [activeWorkspace.id]);
 
   console.log("[DashboardOverview] Rendering...");
 
@@ -84,7 +86,7 @@ export function DashboardOverview() {
           <div className="lg:col-span-8 space-y-6">
             <div className="flex flex-wrap items-center gap-4">
               <Badge className="bg-light-green/90 backdrop-blur-md text-deep-blue border-none px-3 py-1 font-mono text-[10px] uppercase tracking-widest font-bold shadow-lg shadow-light-green/20">
-                System Workspace
+                {activeWorkspace.name}
               </Badge>
               <div className="h-px w-8 bg-white/20" />
               <span className="font-mono text-[10px] uppercase tracking-[0.3em] opacity-60">

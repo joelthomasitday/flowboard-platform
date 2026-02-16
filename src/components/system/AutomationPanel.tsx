@@ -1,21 +1,21 @@
+
 "use client";
 
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Zap, 
-  Bell, 
-  Mail, 
-  Archive, 
-  ChevronRight, 
   Plus, 
-  Clock, 
-  CheckCircle2,
-  MoreVertical,
-  Activity
+  Activity,
+  Trash2,
+  Loader2,
+  X,
+  Brain
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { useWorkspaces } from "@/context/WorkspaceContext";
+import { toast } from "sonner";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -23,66 +23,92 @@ function cn(...inputs: ClassValue[]) {
 
 interface AutomationRule {
   id: string;
+  name?: string;
   trigger: string;
-  actions: string[];
+  action: string;
   isActive: boolean;
-  frequencyScore: number;
+  workspaceId: string;
 }
 
-const INITIAL_RULES: AutomationRule[] = [
-  {
-    id: "1",
-    trigger: "When task status is 'Completed'",
-    actions: ["Notify client via Email", "Generate milestone summary", "Archive after 3 days"],
-    isActive: true,
-    frequencyScore: 88,
-  },
-  {
-    id: "2",
-    trigger: "When deadline is < 24h",
-    actions: ["Alert project lead", "Move to 'High Priority'"],
-    isActive: true,
-    frequencyScore: 42,
-  },
-  {
-    id: "3",
-    trigger: "On Monday at 9:00 AM",
-    actions: ["Generate weekly sprint report", "Post to Slack channel"],
-    isActive: false,
-    frequencyScore: 0,
-  },
-];
-
 export const AutomationPanel = () => {
-  const [rules, setRules] = useState<AutomationRule[]>(INITIAL_RULES);
+  const { activeWorkspace } = useWorkspaces();
+  const [rules, setRules] = useState<AutomationRule[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [newRule, setNewRule] = useState({ trigger: "", action: "" });
   const [suggestions, setSuggestions] = useState<{trigger: string, action: string}[]>([]);
 
-  const toggleRule = (id: string) => {
-    setRules(rules.map(r => r.id === id ? { ...r, isActive: !r.isActive } : r));
+  useEffect(() => {
+    if (activeWorkspace?.id) {
+        fetchRules();
+    }
+  }, [activeWorkspace?.id]);
+
+  const fetchRules = async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetch(`/api/workflows?workspaceId=${activeWorkspace.id}`);
+      if (!res.ok) throw new Error("Failed to load");
+      const data = await res.json();
+      setRules(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAddRule = () => {
+  const toggleRule = async (id: string, currentStatus: boolean) => {
+    try {
+      await fetch('/api/workflows', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, isActive: !currentStatus })
+      });
+      setRules(rules.map(r => r.id === id ? { ...r, isActive: !currentStatus } : r));
+      toast.success(currentStatus ? "Automation paused" : "Automation resumed");
+    } catch (err) {
+      toast.error("Failed to toggle rule");
+    }
+  };
+
+  const handleAddRule = async () => {
     if (!newRule.trigger || !newRule.action) return;
     
-    const rule: AutomationRule = {
-      id: Math.random().toString(36).substr(2, 9),
-      trigger: newRule.trigger,
-      actions: [newRule.action],
-      isActive: true,
-      frequencyScore: Math.floor(Math.random() * 40) + 60,
-    };
-    
-    setRules([...rules, rule]);
-    setNewRule({ trigger: "", action: "" });
-    setIsModalOpen(false);
+    try {
+      const res = await fetch('/api/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trigger: newRule.trigger,
+          action: newRule.action,
+          workspaceId: activeWorkspace.id
+        })
+      });
+      const data = await res.json();
+      setRules([data, ...rules]);
+      setNewRule({ trigger: "", action: "" });
+      setIsModalOpen(false);
+      toast.success("Workflow deployed successfully");
+    } catch (err) {
+      toast.error("Failed to deploy workflow");
+    }
   };
+
+  const handleDeleteRule = async (id: string) => {
+    try {
+        const res = await fetch(`/api/workflows?id=${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+        setRules(rules.filter(r => r.id !== id));
+        toast.success("Workflow decommissioned");
+    } catch (err) {
+        toast.error("Failed to delete");
+    }
+  }
 
   const generateSuggestions = () => {
     setIsSuggesting(true);
-    // Simulate AI thinking
     setTimeout(() => {
       setSuggestions([
         { trigger: "When PR remains unreviewed for 24h", action: "Nudge reviewers on Discord" },
@@ -95,248 +121,219 @@ export const AutomationPanel = () => {
 
   return (
     <div className="space-y-8 p-6 relative">
-      {/* Header Section */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-syne font-bold text-deep-blue tracking-tight">
             Workflow Automations
           </h2>
           <p className="text-soft-blue text-sm mt-1 font-medium">
-            Define intelligent rules to automate your project lifecycle.
+            Define intelligent rules for {activeWorkspace.name}.
           </p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-2.5 bg-deep-blue text-white rounded-lg hover:bg-deep-blue-dark transition-all duration-300 font-medium shadow-soft"
+          className="flex items-center gap-2 px-6 py-2.5 bg-deep-blue text-white rounded-xl hover:bg-deep-blue-dark transition-all duration-300 font-bold shadow-lg shadow-deep-blue/10 text-sm"
         >
           <Plus className="w-4 h-4" />
           <span>New Automation</span>
         </button>
       </div>
 
-      {/* Rules Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {rules.map((rule) => (
+        {isLoading ? (
+            <div className="col-span-full py-20 flex flex-col items-center justify-center gap-4 text-soft-blue/40">
+                <Loader2 className="w-8 h-8 animate-spin" />
+                <p className="font-mono text-[10px] uppercase tracking-widest font-bold">Synchronizing Policy Engine...</p>
+            </div>
+        ) : rules.length === 0 ? (
+            <div className="col-span-full py-20 border-2 border-dashed border-soft-blue/10 rounded-[32px] flex flex-col items-center justify-center text-center p-8">
+                <div className="w-16 h-16 bg-soft-blue/5 rounded-full flex items-center justify-center mb-4">
+                    <Zap className="w-8 h-8 text-soft-blue/20" />
+                </div>
+                <h3 className="font-syne font-bold text-deep-blue text-lg">No active workflows</h3>
+                <p className="text-soft-blue text-sm max-w-xs mt-1">Start by adding your first automation rule or let AI suggest patterns.</p>
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="mt-6 px-6 py-3 bg-soft-blue/10 text-deep-blue rounded-xl font-bold text-sm hover:bg-soft-blue/20 transition-all"
+                >
+                    Create Custom Rule
+                </button>
+            </div>
+        ) : rules.map((rule) => (
           <motion.div
             key={rule.id}
             layout
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className={cn(
-              "p-6 rounded-lg bg-white border border-soft-blue/10 shadow-soft transition-all duration-300 group",
+              "p-6 rounded-[24px] bg-white border border-soft-blue/10 shadow-soft transition-all duration-300 group",
               rule.isActive ? "ring-2 ring-soft-blue/20 bg-cream/30" : "opacity-75 grayscale-[0.5]"
             )}
           >
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start justify-between mb-6">
               <div className={cn(
-                "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+                "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
                 rule.isActive ? "bg-light-green/40 text-deep-blue" : "bg-soft-blue/10 text-soft-blue"
               )}>
                 <Zap className="w-5 h-5" />
               </div>
-              <button
-                onClick={() => toggleRule(rule.id)}
-                className={cn(
-                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none",
-                  rule.isActive ? "bg-light-green-dark" : "bg-soft-blue/20"
-                )}
-              >
-                <motion.span
-                  animate={{ x: rule.isActive ? 22 : 4 }}
-                  className="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm"
-                />
-              </button>
+              <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => toggleRule(rule.id, rule.isActive)}
+                    className={cn(
+                      "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none",
+                      rule.isActive ? "bg-light-green-dark" : "bg-soft-blue/20"
+                    )}
+                  >
+                    <motion.span
+                      animate={{ x: rule.isActive ? 22 : 4 }}
+                      className="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm"
+                    />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteRule(rule.id)}
+                    className="p-2 text-soft-blue/20 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+              </div>
             </div>
 
             <div className="mb-6">
               <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-soft-blue/60 block mb-1">Trigger</span>
-              <p className="font-syne font-bold text-deep-blue leading-tight group-hover:text-deep-blue-light transition-colors">
+              <p className="font-syne font-bold text-deep-blue leading-tight text-lg">
                 {rule.trigger}
               </p>
             </div>
 
             <div className="space-y-3 mb-8">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-soft-blue/60 block mb-1">Actions</span>
-              {rule.actions.map((action, i) => (
-                <div key={i} className="flex items-center gap-3 text-sm text-deep-blue/80 font-medium bg-soft-blue/5 p-2 rounded-md">
-                  <div className="w-2 h-2 rounded-full bg-soft-blue/40" />
-                  {action}
-                </div>
-              ))}
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-soft-blue/60 block mb-1">Action</span>
+              <div className="flex items-center gap-3 text-sm text-deep-blue/80 font-bold bg-white border border-soft-blue/5 p-3 rounded-xl shadow-xs">
+                <div className="w-1.5 h-1.5 rounded-full bg-light-green-dark" />
+                {rule.action}
+              </div>
             </div>
 
             <div className="pt-4 border-t border-soft-blue/5 flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs text-soft-blue font-mono">
+              <div className="flex items-center gap-1.5 text-xs text-soft-blue font-mono font-bold">
                 <Activity className="w-3.5 h-3.5" />
-                <span>{rule.frequencyScore}% effectiveness</span>
+                <span>OPS_READY</span>
               </div>
               {rule.isActive && (
-                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-light-green text-deep-blue text-[10px] font-bold">
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-light-green text-deep-blue text-[9px] font-black tracking-widest uppercase">
                   <span className="w-1 h-1 rounded-full bg-deep-blue animate-pulse" />
-                  ACTIVE
+                  LIVE
                 </span>
               )}
             </div>
           </motion.div>
         ))}
-
-        {/* Empty Slot / Placeholder */}
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="border-2 border-dashed border-soft-blue/20 rounded-lg flex flex-col items-center justify-center p-8 text-soft-blue/40 hover:border-soft-blue/40 transition-colors group"
-        >
-          <div className="w-12 h-12 rounded-full bg-soft-blue/5 flex items-center justify-center mb-4 group-hover:bg-soft-blue/10 transition-all">
-            <Plus className="w-6 h-6" />
-          </div>
-          <span className="font-syne font-bold text-deep-blue">Add Custom Rule</span>
-          <span className="text-xs mt-1">AI can suggest rules based on your usage</span>
-        </button>
       </div>
 
-      {/* AI Simulation / Insight Bar */}
-      <div className="mt-12 p-8 rounded-lg bg-linear-to-r from-soft-blue/5 to-light-green/5 border border-soft-blue/10 flex flex-col md:flex-row items-center gap-8">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2 text-deep-blue">
-            <Brain className="w-5 h-5" />
-            <h3 className="font-syne font-bold">AI Workflow Optimization</h3>
-          </div>
-          <p className="text-soft-blue text-sm">
-            FlowBoard AI identified that your "Client Notifications" automation is saving you approximately <span className="text-deep-blue font-bold">4.2 hours</span> per week.
-          </p>
-        </div>
-        <div className="flex gap-4">
-          <div className="px-6 py-4 rounded-xl bg-white shadow-soft text-center">
-            <div className="text-2xl font-bold font-syne text-deep-blue">94%</div>
-            <div className="text-[10px] font-mono text-soft-blue uppercase tracking-wider">Reliability</div>
-          </div>
-          <div className="px-6 py-4 rounded-xl bg-white shadow-soft text-center">
-            <div className="text-2xl font-bold font-syne text-deep-blue">127</div>
-            <div className="text-[10px] font-mono text-soft-blue uppercase tracking-wider">Triggers / mo</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal Overlay */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-deep-blue/40 backdrop-blur-md">
-          <motion.div 
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-[32px] w-full max-w-2xl overflow-hidden shadow-2xl border border-soft-blue/10"
-          >
-            <div className="p-8 space-y-8">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-syne font-bold text-deep-blue">Create Custom Rule</h3>
-                  <p className="text-soft-blue text-sm">Design a new automation or let AI guide you.</p>
-                </div>
-                <button 
-                  onClick={() => setIsModalOpen(false)}
-                  className="w-10 h-10 rounded-full bg-soft-blue/5 flex items-center justify-center text-soft-blue hover:bg-soft-blue/10 transition-colors"
-                >
-                  <Plus className="w-5 h-5 rotate-45" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Manual form */}
-                <div className="space-y-6">
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-deep-blue/40 backdrop-blur-md">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-[40px] w-full max-w-2xl overflow-hidden shadow-2xl border border-soft-blue/10"
+            >
+              <div className="p-10 space-y-8">
+                <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-[10px] font-mono font-bold uppercase tracking-widest text-soft-blue/60 block mb-2">When this happens (Trigger)</label>
-                    <input 
-                      type="text"
-                      className="w-full px-4 py-3 rounded-xl bg-soft-blue/5 border border-soft-blue/10 focus:outline-none focus:ring-2 focus:ring-soft-blue/20 transition-all font-medium text-deep-blue"
-                      placeholder="e.g. When task priority is 'High'"
-                      value={newRule.trigger}
-                      onChange={(e) => setNewRule({ ...newRule, trigger: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-mono font-bold uppercase tracking-widest text-soft-blue/60 block mb-2">Then do this (Action)</label>
-                    <input 
-                      type="text"
-                      className="w-full px-4 py-3 rounded-xl bg-soft-blue/5 border border-soft-blue/10 focus:outline-none focus:ring-2 focus:ring-soft-blue/20 transition-all font-medium text-deep-blue"
-                      placeholder="e.g. Notify manager on Slack"
-                      value={newRule.action}
-                      onChange={(e) => setNewRule({ ...newRule, action: e.target.value })}
-                    />
+                    <h3 className="text-3xl font-syne font-bold text-deep-blue">Architect Workflow</h3>
+                    <p className="text-soft-blue text-sm mt-1">Design a core operational automation pattern.</p>
                   </div>
                   <button 
-                    onClick={handleAddRule}
-                    disabled={!newRule.trigger || !newRule.action}
-                    className="w-full py-4 bg-deep-blue text-white rounded-xl font-bold hover:bg-deep-blue-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-deep-blue/20"
+                    onClick={() => setIsModalOpen(false)}
+                    className="w-12 h-12 rounded-full bg-soft-blue/5 flex items-center justify-center text-soft-blue hover:bg-soft-blue/10 transition-colors"
                   >
-                    Create Automation
+                    <X className="w-6 h-6" />
                   </button>
                 </div>
 
-                {/* AI Suggestions column */}
-                <div className="bg-soft-blue/5 rounded-2xl p-6 border border-soft-blue/10 flex flex-col">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <Brain className="w-4 h-4 text-deep-blue" />
-                      <span className="font-syne font-bold text-sm text-deep-blue">AI Suggestions</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <div>
+                      <label className="text-[10px] font-mono font-bold uppercase tracking-widest text-soft-blue/60 block mb-2">Initialize Trigger</label>
+                      <input 
+                        type="text"
+                        className="w-full px-5 py-4 rounded-2xl bg-soft-blue/5 border border-soft-blue/10 focus:outline-none focus:ring-2 focus:ring-soft-blue/20 transition-all font-bold text-deep-blue placeholder:text-deep-blue/20"
+                        placeholder="e.g. Task completed"
+                        value={newRule.trigger}
+                        onChange={(e) => setNewRule({ ...newRule, trigger: e.target.value })}
+                      />
                     </div>
-                    {suggestions.length === 0 && !isSuggesting && (
-                      <button 
-                        onClick={generateSuggestions}
-                        className="text-[10px] font-mono font-bold uppercase text-soft-blue hover:text-deep-blue transition-colors"
-                      >
-                        Find Patterns
-                      </button>
-                    )}
+                    <div>
+                      <label className="text-[10px] font-mono font-bold uppercase tracking-widest text-soft-blue/60 block mb-2">Execute Action</label>
+                      <input 
+                        type="text"
+                        className="w-full px-5 py-4 rounded-2xl bg-soft-blue/5 border border-soft-blue/10 focus:outline-none focus:ring-2 focus:ring-soft-blue/20 transition-all font-bold text-deep-blue placeholder:text-deep-blue/20"
+                        placeholder="e.g. Notify project lead"
+                        value={newRule.action}
+                        onChange={(e) => setNewRule({ ...newRule, action: e.target.value })}
+                      />
+                    </div>
+                    <button 
+                      onClick={handleAddRule}
+                      disabled={!newRule.trigger || !newRule.action}
+                      className="w-full py-5 bg-deep-blue text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] hover:bg-deep-blue-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-deep-blue/20"
+                    >
+                      Deploy Automation
+                    </button>
                   </div>
 
-                  <div className="flex-1 space-y-3">
-                    {isSuggesting ? (
-                      <div className="h-full flex flex-col items-center justify-center space-y-3 text-center">
-                        <div className="w-8 h-8 rounded-full border-2 border-soft-blue/20 border-t-deep-blue animate-spin" />
-                        <p className="text-xs text-soft-blue font-medium">Analyzing workspace behavior...</p>
+                  <div className="bg-soft-blue/5 rounded-[32px] p-8 border border-soft-blue/10 flex flex-col">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-2">
+                        <Brain className="w-5 h-5 text-deep-blue" />
+                        <span className="font-syne font-bold text-deep-blue">AI Synthesis</span>
                       </div>
-                    ) : suggestions.length > 0 ? (
-                      suggestions.map((s, i) => (
+                      {suggestions.length === 0 && !isSuggesting && (
                         <button 
-                          key={i}
-                          onClick={() => setNewRule({ trigger: s.trigger, action: s.action })}
-                          className="w-full text-left p-3 rounded-xl bg-white border border-soft-blue/10 hover:border-light-green transition-all group"
+                          onClick={generateSuggestions}
+                          className="text-[10px] font-mono font-bold uppercase text-deep-blue border-b border-deep-blue hover:text-soft-blue hover:border-soft-blue transition-colors"
                         >
-                          <div className="text-[10px] font-bold text-light-green-dark mb-1 group-hover:scale-105 transition-transform origin-left">Strategy Suggestion</div>
-                          <div className="text-xs font-bold text-deep-blue leading-tight mb-1">{s.trigger}</div>
-                          <div className="text-[10px] text-soft-blue truncate">{"→ " + s.action}</div>
+                          Synthesize
                         </button>
-                      ))
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center text-center p-4">
-                        <Zap className="w-6 h-6 text-soft-blue/20 mb-2" />
-                        <p className="text-[10px] text-soft-blue/60 font-medium">
-                          Click "Find Patterns" to let AI analyze your team's workflow and suggest optimizations.
-                        </p>
-                      </div>
-                    )}
+                      )}
+                    </div>
+
+                    <div className="flex-1 space-y-4">
+                      {isSuggesting ? (
+                        <div className="h-full flex flex-col items-center justify-center space-y-4 text-center">
+                          <Loader2 className="w-8 h-8 text-deep-blue animate-spin" />
+                          <p className="text-xs text-soft-blue font-bold font-mono uppercase tracking-widest">Neural Mapping...</p>
+                        </div>
+                      ) : suggestions.length > 0 ? (
+                        suggestions.map((s, i) => (
+                          <button 
+                            key={i}
+                            onClick={() => setNewRule({ trigger: s.trigger, action: s.action })}
+                            className="w-full text-left p-4 rounded-2xl bg-white border border-soft-blue/10 hover:border-light-green transition-all group relative overflow-hidden"
+                          >
+                            <div className="text-[9px] font-black text-light-green-dark mb-1 uppercase tracking-widest">Strategy_Pattern</div>
+                            <div className="text-xs font-bold text-deep-blue leading-tight mb-1">{s.trigger}</div>
+                            <div className="text-[10px] text-soft-blue font-medium italic">{"→ " + s.action}</div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-center p-4">
+                          <Zap className="w-8 h-8 text-soft-blue/10 mb-2" />
+                          <p className="text-[10px] text-soft-blue font-bold uppercase tracking-widest leading-relaxed">
+                            Initialize Neural Pattern recognition to extract workflows.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="bg-deep-blue p-4 text-center">
-              <p className="text-[10px] font-mono text-cream/40 uppercase tracking-widest">
-                FlowBoard Autonomous System v2.0 • Real-time Policy Engine
-              </p>
-            </div>
-          </motion.div>
-        </div>
-      )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
-
-// Internal icons helper (not exported, just for visuals)
-const Brain = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .52 8.23 3.487 3.487 0 0 0 6.003 0c.347.161.714.28 1.1.354"/>
-    <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.52 8.23 3.487 3.487 0 0 1-6.003 0 4.017 4.017 0 0 1-1.1.354"/>
-    <path d="M12 8v11"/>
-    <path d="M16 13h1.5"/>
-    <path d="M8 13H6.5"/>
-  </svg>
-);

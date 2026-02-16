@@ -15,11 +15,11 @@ import {
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
-import { getActiveWorkspace } from "@/lib/workspace-engine";
+import { useWorkspaces } from "@/context/WorkspaceContext";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("automations");
-  const activeWs = getActiveWorkspace();
+  const { activeWorkspace: activeWs } = useWorkspaces();
 
   const tabs = [
     { id: "automations", label: "Automations", icon: Zap },
