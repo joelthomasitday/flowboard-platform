@@ -38,7 +38,7 @@ const features = [
 
 export default function FeatureGrid() {
   return (
-    <section className="relative w-full bg-cream py-16 sm:py-24 md:py-32 px-5 sm:px-6 md:px-12 lg:px-20 overflow-hidden">
+    <section id="features" className="relative w-full bg-cream py-16 sm:py-24 md:py-32 px-5 sm:px-6 md:px-12 lg:px-20 overflow-hidden">
       {/* Soft editorial grid background — hidden on mobile for performance */}
       <div className="absolute inset-0 editorial-grid pointer-events-none opacity-60 hidden sm:block" />
 

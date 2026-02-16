@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 
 const BRAND_LOGOS = [
   { name: "Lumina", id: "lumina" },
@@ -12,7 +13,7 @@ const BRAND_LOGOS = [
 
 export default function SocialProof() {
   return (
-    <section className="relative py-16 sm:py-24 md:py-32 px-5 sm:px-6 md:px-12 lg:px-20 bg-cream overflow-hidden">
+    <section id="about" className="relative py-16 sm:py-24 md:py-32 px-5 sm:px-6 md:px-12 lg:px-20 bg-cream overflow-hidden">
       {/* Layered Pastel Shapes — smaller on mobile */}
       <div className="absolute top-0 right-0 w-[250px] sm:w-[500px] h-[250px] sm:h-[500px] bg-soft-blue/5 rounded-full blur-2xl sm:blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[200px] sm:w-[400px] h-[200px] sm:h-[400px] bg-light-green/10 rounded-full blur-2xl sm:blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
@@ -50,17 +51,14 @@ export default function SocialProof() {
               {/* Image Placeholder with Soft Tint */}
               <div className="absolute inset-0 bg-gradient-to-tr from-soft-blue/20 to-transparent mix-blend-multiply opacity-60 pointer-events-none z-10" />
               
-              {/* Placeholder text/pattern */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="font-mono text-[10px] uppercase tracking-widest text-deep-blue/10 rotate-90">EDITORIAL_M_042</span>
-              </div>
-              
-              {/* Simple geometric shape for visual interest */}
-              <div className="absolute bottom-8 right-8 sm:bottom-10 sm:right-10 w-20 sm:w-24 h-20 sm:h-24 border border-deep-blue/5 rounded-full" />
-              
-              <div className="w-full h-full bg-[#E5E2DA] flex items-center justify-center">
-                 <div className="text-deep-blue/20 text-xs font-mono uppercase tracking-[0.2em]">Founder Portrait</div>
-              </div>
+              <Image
+                src="/assets/founder-portrait.jpg"
+                alt="Alex Sterling — Founder & CEO, Aether Systems"
+                fill
+                className="object-cover object-center"
+                sizes="(max-width: 1024px) 320px, 25vw"
+                priority
+              />
             </div>
             
             {/* Accent shape overlapping image — smaller on mobile */}

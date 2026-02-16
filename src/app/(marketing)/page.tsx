@@ -19,7 +19,7 @@ export default function MarketingPage() {
       <FlowBoardChatbot />
       
       {/* Footer / Final CTA End Block */}
-      <div className="h-40 sm:h-64 bg-surface-tinted w-full border-t border-border-soft flex items-center justify-center relative overflow-hidden">
+      <div id="contact" className="h-40 sm:h-64 bg-surface-tinted w-full border-t border-border-soft flex items-center justify-center relative overflow-hidden" style={{ scrollMarginTop: '5rem' }}>
         <div className="absolute inset-0 editorial-grid opacity-20 hidden sm:block" />
         <div className="flex flex-col items-center gap-3 sm:gap-4 relative z-10 px-5">
           <div className="w-10 sm:w-12 h-1 bg-light-green rounded-full" />

@@ -56,7 +56,7 @@ export default function Pricing() {
   };
 
   return (
-    <section className="relative py-16 sm:py-24 md:py-32 px-5 sm:px-6 md:px-12 lg:px-20 bg-cream overflow-hidden">
+    <section id="pricing" className="relative py-16 sm:py-24 md:py-32 px-5 sm:px-6 md:px-12 lg:px-20 bg-cream overflow-hidden">
       <div className="max-w-7xl mx-auto text-center mb-10 sm:mb-16 md:mb-20">
         <span className="font-mono text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-deep-blue/40">
           Investment Structures

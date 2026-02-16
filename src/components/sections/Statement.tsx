@@ -4,7 +4,7 @@ import React from "react";
 
 export default function Statement() {
   return (
-    <section className="relative min-h-[70vh] sm:min-h-[90vh] w-full flex flex-col items-center justify-center overflow-hidden bg-surface-tinted">
+    <section id="services" className="relative min-h-[70vh] sm:min-h-[90vh] w-full flex flex-col items-center justify-center overflow-hidden bg-surface-tinted">
       {/* Soft overlapping shapes */}
       <div className="absolute top-0 left-0 w-full h-24 sm:h-32 bg-gradient-to-b from-cream to-transparent pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-full h-24 sm:h-32 bg-gradient-to-t from-cream to-transparent pointer-events-none z-20" />

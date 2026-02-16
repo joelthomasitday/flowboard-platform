@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { ArrowRight, Sparkles, Layout, Zap, Search } from "lucide-react";
 
 export default function Hero() {
@@ -43,13 +44,19 @@ export default function Hero() {
 
         {/* CTA Actions — Full-width stacked on mobile */}
         <div className="flex flex-col items-center gap-3 sm:gap-4 w-full max-w-md sm:max-w-none sm:flex-row sm:justify-center mb-16 sm:mb-20">
-          <button className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 sm:px-10 py-4 sm:py-5 bg-deep-blue text-cream rounded-full font-bold text-sm uppercase tracking-widest shadow-md hover:bg-deep-blue/90 transition-all duration-300">
+          <Link href="/dashboard" className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 sm:px-10 py-4 sm:py-5 bg-deep-blue text-cream rounded-full font-bold text-sm uppercase tracking-widest shadow-md hover:bg-deep-blue/90 transition-all duration-300 no-underline">
             <span className="relative z-10 flex items-center gap-2">
               Start Building <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </span>
-          </button>
+          </Link>
           
-          <button className="w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 bg-white/50 backdrop-blur-sm text-deep-blue/80 rounded-full font-bold text-sm uppercase tracking-widest border border-border-soft hover:bg-cream-warm transition-colors duration-300">
+          <button
+            onClick={() => {
+              const el = document.getElementById("about");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 bg-white/50 backdrop-blur-sm text-deep-blue/80 rounded-full font-bold text-sm uppercase tracking-widest border border-border-soft hover:bg-cream-warm transition-colors duration-300 cursor-pointer"
+          >
             View Case Studies
           </button>
 

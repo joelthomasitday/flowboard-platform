@@ -190,6 +190,7 @@
     -moz-text-size-adjust: 100%;
     text-size-adjust: 100%;
     overflow-x: hidden;
+    scroll-behavior: smooth;
   }
 
   body {
@@ -198,9 +199,13 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeSpeed;
-    scroll-behavior: smooth;
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Offset for fixed navbar when scrolling to anchor links */
+  section[id] {
+    scroll-margin-top: 5rem;
   }
 
   ::selection {

@@ -5,7 +5,7 @@ import { Cpu, CheckCircle, Zap, Activity, MessageSquare } from "lucide-react";
 
 const AIDemo = () => {
   return (
-    <section className="relative min-h-screen w-full bg-surface-tinted overflow-hidden py-16 sm:py-24 px-5 sm:px-6 md:px-12 lg:px-20 flex items-center justify-center">
+    <section id="ai-demo" className="relative min-h-screen w-full bg-surface-tinted overflow-hidden py-16 sm:py-24 px-5 sm:px-6 md:px-12 lg:px-20 flex items-center justify-center">
       {/* Background Effects */}
       <div className="absolute top-0 left-0 w-full h-24 sm:h-32 bg-gradient-to-b from-cream to-transparent pointer-events-none z-20" />
       <div className="absolute bottom-0 left-0 w-full h-24 sm:h-32 bg-gradient-to-t from-cream to-transparent pointer-events-none z-20" />
