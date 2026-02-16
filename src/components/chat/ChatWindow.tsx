@@ -2,6 +2,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Send, X, ExternalLink, MessageCircle, ChevronDown } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useWorkspaces } from "@/context/WorkspaceContext";
 import ChatBubble from "./ChatBubble";
 
 interface Message {
@@ -21,6 +23,8 @@ const SUGGESTED_PROMPTS = [
 ];
 
 export default function ChatWindow({ onClose }: ChatWindowProps) {
+  const router = useRouter();
+  const { activeWorkspace } = useWorkspaces();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -46,7 +50,11 @@ export default function ChatWindow({ onClose }: ChatWindowProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           messages: [...messages, userMsg],
-          context: { page: "homepage" }
+          context: { 
+            page: window.location.pathname,
+            workspaceId: activeWorkspace?.id,
+            workspaceName: activeWorkspace?.name
+          }
         }),
       });
 
@@ -83,6 +91,10 @@ export default function ChatWindow({ onClose }: ChatWindowProps) {
       ]);
     } finally {
       setIsTyping(false);
+      // Signal dashboard to refresh tasks if likely affected
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("refresh-tasks"));
+      }, 500);
     }
   };
 
@@ -151,9 +163,23 @@ export default function ChatWindow({ onClose }: ChatWindowProps) {
               {messages.map((msg, i) => (
                 <div key={i} className="space-y-2">
                   <ChatBubble role={msg.role} content={msg.content} />
-                  {msg.role === "assistant" && (msg.content.toLowerCase().includes("project") || msg.content.toLowerCase().includes("create")) && (
+                  {msg.role === "assistant" && msg.content.includes("Task synchronized") && (
                     <div className="flex justify-start pl-4 pb-2">
-                      <button className="flex items-center gap-2 px-4 py-2.5 bg-light-green text-deep-blue text-[10px] font-bold uppercase tracking-wider rounded-full shadow-soft hover:bg-light-green-dark transition-colors border border-light-green-dark/30 min-h-[44px]">
+                      <button 
+                        onClick={() => router.push("/dashboard/tasks")}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-light-green text-deep-blue text-[10px] font-bold uppercase tracking-wider rounded-full shadow-soft hover:bg-light-green/90 transition-all border border-dark-green/10 min-h-[44px] cursor-pointer hover:scale-105"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        View Live Task List
+                      </button>
+                    </div>
+                  )}
+                  {msg.role === "assistant" && msg.content.toLowerCase().includes("project") && !msg.content.includes("Task synchronized") && (
+                    <div className="flex justify-start pl-4 pb-2">
+                      <button 
+                         onClick={() => router.push("/dashboard")}
+                         className="flex items-center gap-2 px-4 py-2.5 bg-soft-blue text-white text-[10px] font-bold uppercase tracking-wider rounded-full shadow-soft hover:bg-soft-blue/90 transition-all min-h-[44px] cursor-pointer hover:scale-105"
+                      >
                         <ExternalLink className="w-3 h-3" />
                         Open Project Workspace
                       </button>
@@ -196,7 +222,10 @@ export default function ChatWindow({ onClose }: ChatWindowProps) {
             </button>
           </div>
           <div className="flex items-center justify-between px-1">
-            <button className="flex items-center gap-1.5 text-[10px] font-mono text-deep-blue/40 hover:text-deep-blue transition-colors uppercase tracking-widest min-h-[44px]">
+            <button 
+              onClick={() => router.push("/dashboard")}
+              className="flex items-center gap-1.5 text-[10px] font-mono text-deep-blue/40 hover:text-deep-blue transition-colors uppercase tracking-widest min-h-[44px] cursor-pointer"
+            >
               <ExternalLink className="w-3 h-3" />
               Open Dashboard
             </button>

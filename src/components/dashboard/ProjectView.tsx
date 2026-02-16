@@ -57,24 +57,34 @@ export function ProjectView() {
   const editInputRef = React.useRef<HTMLInputElement>(null);
 
   // Fetch Tasks
+  const fetchTasks = async () => {
+    setLoading(true);
+    try {
+      const url = projectIdFromUrl 
+        ? `/api/tasks?projectId=${projectIdFromUrl}` 
+        : '/api/tasks';
+      const res = await fetch(url);
+      const data = await res.json();
+      setTasks(data);
+    } catch (err) {
+      console.error("Failed to fetch tasks", err);
+      toast.error("Failed to load project tasks");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchTasks = async () => {
-      setLoading(true);
-      try {
-        const url = projectIdFromUrl 
-          ? `/api/tasks?projectId=${projectIdFromUrl}` 
-          : '/api/tasks';
-        const res = await fetch(url);
-        const data = await res.json();
-        setTasks(data);
-      } catch (err) {
-        console.error("Failed to fetch tasks", err);
-        toast.error("Failed to load project tasks");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchTasks();
+  }, [projectIdFromUrl]);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      console.log("[ProjectView] Refreshing tasks due to external event...");
+      fetchTasks();
+    };
+    window.addEventListener("refresh-tasks", handleRefresh);
+    return () => window.removeEventListener("refresh-tasks", handleRefresh);
   }, [projectIdFromUrl]);
 
   // Focus input when editing starts

@@ -59,9 +59,20 @@ export function TaskManagement() {
 
   useEffect(() => {
     if (activeWorkspace?.id) {
+      console.log("[TaskManagement] Initial fetch for workspace:", activeWorkspace.id);
+      setTasks([]); // Clear state for new workspace
       fetchTasks();
       fetchProjects();
     }
+  }, [activeWorkspace?.id]);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      console.log("[TaskManagement] Refreshing tasks due to external event...");
+      fetchTasks();
+    };
+    window.addEventListener("refresh-tasks", handleRefresh);
+    return () => window.removeEventListener("refresh-tasks", handleRefresh);
   }, [activeWorkspace?.id]);
 
   const fetchProjects = async () => {

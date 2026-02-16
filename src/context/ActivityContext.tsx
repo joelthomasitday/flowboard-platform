@@ -21,27 +21,40 @@ interface ActivityContextType {
 
 const ActivityContext = createContext<ActivityContextType | undefined>(undefined);
 
+import { useWorkspaces } from './WorkspaceContext';
+
 export function ActivityProvider({ children }: { children: React.ReactNode }) {
+  const { activeWorkspace } = useWorkspaces();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        const res = await fetch('/api/dashboard/overview');
-        const data = await res.json();
-        if (data.activities) {
-          setEvents(data.activities);
-        }
-      } catch (err) {
-        console.error("Failed to fetch activities:", err);
-      } finally {
-        setIsLoading(false);
+  const fetchActivities = async () => {
+    if (!activeWorkspace?.id) return;
+    try {
+      const res = await fetch(`/api/dashboard/overview?workspaceId=${activeWorkspace.id}`);
+      const data = await res.json();
+      if (data.activities) {
+        setEvents(data.activities);
       }
-    };
+    } catch (err) {
+      console.error("Failed to fetch activities:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchActivities();
-  }, []);
+  }, [activeWorkspace?.id]);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      console.log("[ActivityProvider] Refreshing activities...");
+      fetchActivities();
+    };
+    window.addEventListener("refresh-tasks", handleRefresh);
+    return () => window.removeEventListener("refresh-tasks", handleRefresh);
+  }, [activeWorkspace?.id]);
 
   const addEvent = (event: Omit<ActivityEvent, 'id' | 'timestamp'>) => {
     const newEvent: ActivityEvent = {

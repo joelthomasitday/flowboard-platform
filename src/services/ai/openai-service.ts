@@ -19,10 +19,10 @@ const getOpenRouterClient = () => {
 };
 
 const MODELS = {
-  /** High performance/Strategic model. */
-  SMART: "arcee-ai/trinity-large-preview:free",
+  /** High performance/Strategic model (Aurora Alpha for deep reasoning). */
+  SMART: "openrouter/aurora-alpha",
   /** Fast and cost-effective. */
-  FAST: "google/gemini-2.0-flash:free",
+  FAST: "google/gemini-2.0-flash-lite:preview:free",
 } as const;
 
 export const aiService = {
@@ -139,7 +139,9 @@ export const aiService = {
       
       ${context ? `USER CONTEXT: ${JSON.stringify(context)}` : "USER IS A GUEST (Demo Mode). Encourage them to sign up to unlock full architecture capabilities."}
       
-      Keep responses concise, editorial, and helpful. Use markdown for structure.`;
+      Keep responses concise, editorial, and helpful. Use markdown for structure.
+      
+      You have tools to interact with the workspace. If a user asks to "upload", "save", or "create" a task you've discussed, use the create_task tool.`;
 
       const stream = await openai.chat.completions.create({
         model: MODELS.SMART,
@@ -151,7 +153,42 @@ export const aiService = {
           }))
         ],
         stream: true,
-      });
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "create_task",
+              description: "Create a new task in the workspace",
+              parameters: {
+                type: "object",
+                properties: {
+                  title: { type: "string", description: "The task title" },
+                  description: { type: "string", description: "Detailed task description" },
+                  projectId: {
+                  type: "string",
+                  description: "Optional ID of a specific project to associate the task with. If not provided, it will use the workspace's default project."
+                },
+                priority: {
+                  type: "string",
+                  enum: ["LOW", "MEDIUM", "HIGH"],
+                  description: "Urgency of the task: LOW (routine), MEDIUM (standard), or HIGH (critical/bottleneck)."
+                },
+                dueDate: {
+                  type: "string",
+                  description: "Deadline in any standard format (e.g., '2024-12-01', 'tomorrow', 'next Friday')."
+                },
+                assignee: {
+                  type: "string",
+                  description: "The name or email of the person this task should be assigned to."
+                }
+              },
+              required: ["title"]
+            }
+          }
+        }
+      ],
+      tool_choice: "auto"
+    });
 
       return stream;
     } catch (error: any) {

@@ -36,20 +36,31 @@ export function DashboardOverview() {
   const [data, setData] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
   
+  const fetchData = async () => {
+    try {
+      const res = await fetch(`/api/dashboard/overview?workspaceId=${activeWorkspace.id}`);
+      const json = await res.json();
+      setData(json);
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch(`/api/dashboard/overview?workspaceId=${activeWorkspace.id}`);
-        const json = await res.json();
-        setData(json);
-      } catch (err) {
-        console.error("Error fetching dashboard data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!activeWorkspace?.id) return;
     fetchData();
-  }, [activeWorkspace.id]);
+  }, [activeWorkspace?.id]);
+
+  React.useEffect(() => {
+    const handleRefresh = () => {
+      console.log("[DashboardOverview] Refreshing due to external event...");
+      if (activeWorkspace?.id) fetchData();
+    };
+    window.addEventListener("refresh-tasks", handleRefresh);
+    return () => window.removeEventListener("refresh-tasks", handleRefresh);
+  }, [activeWorkspace?.id]);
 
   console.log("[DashboardOverview] Rendering...");
 

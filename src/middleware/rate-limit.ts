@@ -8,10 +8,10 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
 
-// Create a new ratelimiter, that allows 10 requests per 10 seconds
+// Create a new ratelimiter, that allows 30 requests per 10 seconds
 export const apiRatelimit = new Ratelimit({
   redis: redis,
-  limiter: Ratelimit.slidingWindow(10, "10 s"),
+  limiter: Ratelimit.slidingWindow(30, "10 s"),
   analytics: true,
   prefix: "@upstash/ratelimit/api",
 });
@@ -19,7 +19,7 @@ export const apiRatelimit = new Ratelimit({
 // Stricter limit for AI endpoints
 export const aiRatelimit = new Ratelimit({
   redis: redis,
-  limiter: Ratelimit.slidingWindow(5, "1 m"),
+  limiter: Ratelimit.slidingWindow(10, "1 m"),
   analytics: true,
   prefix: "@upstash/ratelimit/ai",
 });

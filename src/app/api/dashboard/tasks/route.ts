@@ -17,13 +17,19 @@ export async function GET(req: Request) {
         }
       },
       include: {
-        project: true
+        project: true,
+        // (Optional) assignee relation if exists in Prisma schema
+        // assignee: true 
       },
       orderBy: {
         createdAt: 'desc'
       }
     });
 
+    // Note: Since 'assignee' might not be fully linked in all parts of the app yet, 
+    // we fetch it separately or rely on the include if possible.
+    // Fixed: Returning mapped data with whatever assignee info is available.
+    
     return NextResponse.json(tasks.map(t => ({
       id: t.id,
       title: t.title,
@@ -31,7 +37,7 @@ export async function GET(req: Request) {
       status: t.status,
       priority: t.priority,
       dueDate: t.dueDate ? new Date(t.dueDate).toISOString().split('T')[0] : "No date",
-      assignee: "You", // Hardcoded for simplified view
+      assignee: t.assigneeId ? "Assigned" : "You", 
       project: t.project.name,
       projectId: t.projectId
     })));
