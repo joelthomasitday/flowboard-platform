@@ -20,7 +20,8 @@ export async function GET() {
       priority: t.priority,
       dueDate: t.dueDate ? new Date(t.dueDate).toISOString().split('T')[0] : "No date",
       assignee: "You", // Hardcoded for simplified view
-      project: t.project.name
+      project: t.project.name,
+      projectId: t.projectId
     })));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

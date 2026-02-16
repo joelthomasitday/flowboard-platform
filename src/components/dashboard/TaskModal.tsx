@@ -1,29 +1,39 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Plus, Type, AlignLeft, Flag, CheckCircle2, Circle, Loader2 } from "lucide-react";
+import { X, Plus, Type, AlignLeft, Flag, CheckCircle2, Circle, Loader2, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (taskData: { title: string; description: string; status: string; priority: string; dueDate?: string }) => Promise<void>;
+  onConfirm: (taskData: { 
+    title: string; 
+    description: string; 
+    status: string; 
+    priority: string; 
+    dueDate?: string;
+    projectId?: string;
+  }) => Promise<void>;
   initialData?: {
     title: string;
     description: string;
     status: string;
     priority: string;
     dueDate?: string;
+    projectId?: string;
   };
+  projects?: { id: string; name: string }[];
 }
 
-export function TaskModal({ isOpen, onClose, onConfirm, initialData }: TaskModalProps) {
+export function TaskModal({ isOpen, onClose, onConfirm, initialData, projects = [] }: TaskModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("TODO");
   const [priority, setPriority] = useState("MEDIUM");
   const [dueDate, setDueDate] = useState("");
+  const [projectId, setProjectId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sync state with initialData when modal opens
@@ -34,8 +44,9 @@ export function TaskModal({ isOpen, onClose, onConfirm, initialData }: TaskModal
       setStatus(initialData?.status || "TODO");
       setPriority(initialData?.priority || "MEDIUM");
       setDueDate(initialData?.dueDate && initialData.dueDate !== "No date" ? initialData.dueDate : "");
+      setProjectId(initialData?.projectId || (projects.length > 0 ? projects[0].id : ""));
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, projects]);
 
   // Close on Escape key
   useEffect(() => {
@@ -54,7 +65,14 @@ export function TaskModal({ isOpen, onClose, onConfirm, initialData }: TaskModal
 
     setIsSubmitting(true);
     try {
-      await onConfirm({ title, description, status, priority, dueDate: dueDate || undefined });
+      await onConfirm({ 
+        title, 
+        description, 
+        status, 
+        priority, 
+        dueDate: dueDate || undefined,
+        projectId: projectId || undefined
+      });
       onClose();
     } catch (error) {
       console.error("Failed to process task:", error);
@@ -129,6 +147,32 @@ export function TaskModal({ isOpen, onClose, onConfirm, initialData }: TaskModal
               rows={3}
               className="w-full bg-surface-sunken/50 border border-transparent focus:border-soft-blue/30 focus:bg-white rounded-2xl px-5 py-4 text-deep-blue font-medium outline-hidden transition-all text-sm placeholder:text-deep-blue/20 shadow-inner resize-none"
             />
+          </div>
+
+          {/* Project Selection */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-deep-blue/40 ml-1 flex items-center gap-2">
+              <Target className="w-3 h-3" />
+              Target Project
+            </label>
+            <div className="relative">
+              <select 
+                required
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+                className="w-full appearance-none bg-surface-sunken/50 border border-transparent focus:border-soft-blue/30 focus:bg-white rounded-2xl px-5 py-4 text-deep-blue font-medium outline-hidden transition-all text-sm cursor-pointer shadow-inner"
+              >
+                <option value="" disabled>Select a project...</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-deep-blue/20">
+                <Plus className="w-4 h-4 rotate-45" />
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

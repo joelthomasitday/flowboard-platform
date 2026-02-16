@@ -32,6 +32,12 @@ interface Task {
   dueDate: string;
   assignee: string;
   project: string;
+  projectId: string;
+}
+
+interface Project {
+  id: string;
+  name: string;
 }
 
 export function TaskManagement() {
@@ -44,16 +50,39 @@ export function TaskManagement() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
     fetchTasks();
+    fetchProjects();
   }, []);
+
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch("/api/projects");
+      if (!res.ok) {
+        console.warn("Projects API returned", res.status);
+        return;
+      }
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setProjects(data);
+      }
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    }
+  };
 
   const fetchTasks = async () => {
     try {
       setIsLoading(true);
       console.log("[TaskManagement] Fetching tasks from real DB...");
       const res = await fetch("/api/dashboard/tasks");
+      if (!res.ok) {
+        console.error("Tasks API returned", res.status);
+        toast.error("Failed to load tasks (server error)");
+        return;
+      }
       const data = await res.json();
       if (Array.isArray(data)) {
         setTasks(data);
@@ -95,7 +124,14 @@ export function TaskManagement() {
     // In a real app, you'd call a PATCH API here
   };
 
-  const handleConfirmTask = async (taskData: { title: string; description: string; status: string; priority: string; dueDate?: string }) => {
+  const handleConfirmTask = async (taskData: { 
+    title: string; 
+    description: string; 
+    status: string; 
+    priority: string; 
+    dueDate?: string;
+    projectId?: string;
+  }) => {
     try {
       const isEditing = !!editingTask;
       toast.info(isEditing ? "Updating task..." : "Creating task...");
@@ -354,8 +390,10 @@ export function TaskManagement() {
           description: editingTask.description,
           status: editingTask.status,
           priority: editingTask.priority,
-          dueDate: editingTask.dueDate
+          dueDate: editingTask.dueDate,
+          projectId: editingTask.projectId
         } : undefined}
+        projects={projects}
       />
       
       <DeleteTaskModal 
