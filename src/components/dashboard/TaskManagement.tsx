@@ -14,12 +14,14 @@ import {
   ArrowUpRight,
   ChevronDown,
   Loader2,
-  X
+  X,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { toast } from "sonner";
 import { TaskModal } from "./TaskModal";
+import { DeleteTaskModal } from "./DeleteTaskModal";
 
 interface Task {
   id: string;
@@ -40,6 +42,8 @@ export function TaskManagement() {
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
   useEffect(() => {
     fetchTasks();
@@ -113,6 +117,39 @@ export function TaskManagement() {
       toast.error("Could not save changes to database");
       throw error;
     }
+  };
+
+  const confirmDeleteTask = async () => {
+    if (!taskToDelete) return;
+
+    try {
+      const id = taskToDelete.id;
+      // Optimistic update
+      setTasks(prev => prev.filter(t => t.id !== id));
+      toast.info("Deleting task...");
+
+      const res = await fetch(`/api/dashboard/tasks?id=${id}`, {
+        method: "DELETE"
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete task");
+      }
+      toast.success("Task deleted successfully");
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast.error("Failed to delete task");
+      fetchTasks(); // Revert
+    } finally {
+      setIsDeleteModalOpen(false);
+      setTaskToDelete(null);
+    }
+  };
+
+  const openDeleteModal = (task: Task, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTaskToDelete(task);
+    setIsDeleteModalOpen(true);
   };
 
   const addTask = () => {
@@ -272,6 +309,14 @@ export function TaskManagement() {
                     <ArrowUpRight className="w-3.5 h-3.5 group-hover/edit:translate-x-0.5 group-hover/edit:-translate-y-0.5 transition-transform" />
                     <span className="text-[10px] font-black uppercase tracking-widest">Edit</span>
                   </button>
+                  
+                  <button 
+                    onClick={(e) => openDeleteModal(task, e)}
+                    className="h-10 w-10 rounded-xl bg-surface-sunken/50 hover:bg-red-50 text-deep-blue/40 hover:text-red-500 border border-transparent hover:border-red-200 transition-all duration-300 cursor-pointer flex items-center justify-center group/delete"
+                    title="Delete Task"
+                  >
+                    <Trash2 className="w-4 h-4 group-hover/delete:scale-110 transition-transform" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -311,6 +356,13 @@ export function TaskManagement() {
           priority: editingTask.priority,
           dueDate: editingTask.dueDate
         } : undefined}
+      />
+      
+      <DeleteTaskModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteTask}
+        taskTitle={taskToDelete?.title}
       />
     </div>
   );
