@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 /**
- * We use the OpenAI client pointing to OpenRouter for maximum stability 
+ * We use the OpenAI client pointing to OpenRouter for maximum stability
  * and compatibility with Next.js streaming response patterns.
  */
 const getOpenRouterClient = () => {
@@ -12,18 +12,37 @@ const getOpenRouterClient = () => {
     apiKey: process.env.OPENAI_API_KEY,
     baseURL: "https://openrouter.ai/api/v1",
     defaultHeaders: {
-      "HTTP-Referer": process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost", // Optional, for OpenRouter rankings
-      "X-Title": "FlowBoard", // Optional
-    }
+      "HTTP-Referer": process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost",
+      "X-Title": "FlowBoard",
+    },
   });
 };
 
 const MODELS = {
-  /** High performance/Strategic model (Aurora Alpha for deep reasoning). */
-  SMART: "openrouter/aurora-alpha",
-  /** Fast and cost-effective. */
-  FAST: "google/gemini-2.0-flash-lite:preview:free",
+  /**
+   * Best free vision model confirmed on this OpenRouter account: Google Gemma 3 27B.
+   * Supports text + image inputs — used when the user attaches an image.
+   */
+  SMART: "nvidia/nemotron-nano-12b-v2-vl:free",
+  /**
+   * Best free text-only model: Llama 3.3 70B Instruct.
+   * Used for standard chat messages without images.
+   */
+  FAST: "stepfun/step-3.5-flash:free",
 } as const;
+
+/** A chat message part — either plain text or a base64 image. */
+export interface MessageContentPart {
+  type: "text" | "image_url";
+  text?: string;
+  image_url?: { url: string };
+}
+
+/** A chat message, supporting either simple string content or multimodal parts. */
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string | MessageContentPart[];
+}
 
 export const aiService = {
   /**
@@ -33,18 +52,19 @@ export const aiService = {
     try {
       const openai = getOpenRouterClient();
       const response = await openai.chat.completions.create({
-        model: MODELS.SMART,
+        model: MODELS.FAST,
         messages: [
           {
             role: "system",
-            content: "You are an elite project management AI assistant for FlowBoard. Generate a strategic executive summary. Return valid JSON."
+            content:
+              "You are an elite project management AI assistant for FlowBoard. Generate a strategic executive summary. Return valid JSON.",
           },
           {
             role: "user",
-            content: `Analyze this project data: ${JSON.stringify(context)}`
-          }
+            content: `Analyze this project data: ${JSON.stringify(context)}`,
+          },
         ],
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
       });
 
       const content = response.choices[0].message.content;
@@ -62,14 +82,14 @@ export const aiService = {
     try {
       const openai = getOpenRouterClient();
       const response = await openai.chat.completions.create({
-        model: MODELS.SMART,
+        model: MODELS.FAST,
         messages: [
           {
             role: "system",
-            content: `You are an elite executive strategy consultant AI for FlowBoard. 
-            Generate a comprehensive narrative report for a workspace. 
+            content: `You are an elite executive strategy consultant AI for FlowBoard.
+            Generate a comprehensive narrative report for a workspace.
             The report must be professional, insightful, and strategic.
-            
+
             Return ONLY a JSON object with this exact structure:
             {
               "summary": "2-3 paragraphs of strategic overview using rich, professional language.",
@@ -78,14 +98,14 @@ export const aiService = {
               "timeSaved": number (between 5 and 30),
               "automationSavings": number (between 1000 and 10000),
               "topInsights": ["insight 1", "insight 2", "insight 3"]
-            }`
+            }`,
           },
           {
             role: "user",
-            content: `Generate a narrative report for this workspace context: ${JSON.stringify(context)}`
-          }
+            content: `Generate a narrative report for this workspace context: ${JSON.stringify(context)}`,
+          },
         ],
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
       });
 
       const content = response.choices[0].message.content;
@@ -107,14 +127,14 @@ export const aiService = {
         messages: [
           {
             role: "system",
-            content: "Break down the task into 3-5 actionable subtasks. Return JSON with a 'subtasks' array."
+            content: "Break down the task into 3-5 actionable subtasks. Return JSON with a 'subtasks' array.",
           },
           {
             role: "user",
-            content: `Task: ${taskTitle}\nContext: ${description}`
-          }
+            content: `Task: ${taskTitle}\nContext: ${description}`,
+          },
         ],
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
       });
 
       const content = response.choices[0].message.content;
@@ -126,31 +146,52 @@ export const aiService = {
   },
 
   /**
-   * Streaming chat for the assistant
+   * Streaming chat for the assistant.
+   * Messages may contain image content parts (base64 or URL) for vision analysis.
    */
-  async streamChat(messages: { role: string; content: string }[], context: any = null) {
+  async streamChat(messages: ChatMessage[], context: any = null) {
     try {
       const openai = getOpenRouterClient();
-      const systemPrompt = `You are FlowBoard AI, a premium, intelligent workspace assistant. 
+
+      // Detect if any message contains an image — pick vision model if so
+      const hasImage = messages.some(
+        (m) =>
+          Array.isArray(m.content) &&
+          m.content.some((p) => p.type === "image_url")
+      );
+      const model = hasImage ? MODELS.SMART : MODELS.FAST;
+
+      const systemPrompt = `You are FlowBoard AI, a premium intelligent workspace assistant.
       Your personality is strategic, design-forward, calm, and helpful.
-      You help users manage projects, handle deadlines, and architect their workflows.
-      
+      You help users manage projects, handle deadlines, and architect workflows.
+
       Design System Context: "Soft Editorial Pastel" (#FFFDF5 background, #364C84 primary).
-      
-      ${context ? `USER CONTEXT: ${JSON.stringify(context)}` : "USER IS A GUEST (Demo Mode). Encourage them to sign up to unlock full architecture capabilities."}
-      
+
+      ${
+        context
+          ? `USER CONTEXT: ${JSON.stringify(context)}`
+          : "USER IS A GUEST (Demo Mode). Encourage them to sign up to unlock full capabilities."
+      }
+
       Keep responses concise, editorial, and helpful. Use markdown for structure.
-      
-      You have tools to interact with the workspace. If a user asks to "upload", "save", or "create" a task you've discussed, use the create_task tool.`;
+
+      IMPORTANT — When a user shares an IMAGE:
+      1. Carefully analyze what's in the image (screenshot, mockup, diagram, document, whiteboard, etc.)
+      2. Extract ALL actionable items, tasks, features, bugs, or requirements visible.
+      3. Immediately use the create_task tool for EACH distinct task you identify.
+      4. Describe each task clearly with title, description, priority, and due date if visible.
+      5. After creating tasks, summarize what you found and what tasks were created.
+
+      You have tools to interact with the workspace. Use create_task whenever a user asks to create/save a task, OR when analyzing an image.`;
 
       const stream = await openai.chat.completions.create({
-        model: MODELS.SMART,
+        model,
         messages: [
           { role: "system", content: systemPrompt },
-          ...messages.map(m => ({
+          ...messages.map((m) => ({
             role: m.role as "user" | "assistant",
-            content: m.content
-          }))
+            content: m.content,
+          })),
         ],
         stream: true,
         tools: [
@@ -158,42 +199,50 @@ export const aiService = {
             type: "function",
             function: {
               name: "create_task",
-              description: "Create a new task in the workspace",
+              description:
+                "Create a new task in the workspace. Use this for explicit task requests AND when extracting tasks from an analyzed image.",
               parameters: {
                 type: "object",
                 properties: {
                   title: { type: "string", description: "The task title" },
-                  description: { type: "string", description: "Detailed task description" },
+                  description: {
+                    type: "string",
+                    description: "Detailed task description",
+                  },
                   projectId: {
-                  type: "string",
-                  description: "Optional ID of a specific project to associate the task with. If not provided, it will use the workspace's default project."
+                    type: "string",
+                    description:
+                      "Optional ID of a specific project. Defaults to workspace's active project.",
+                  },
+                  priority: {
+                    type: "string",
+                    enum: ["LOW", "MEDIUM", "HIGH"],
+                    description:
+                      "Urgency: LOW (routine), MEDIUM (standard), HIGH (critical).",
+                  },
+                  dueDate: {
+                    type: "string",
+                    description:
+                      "Deadline in any standard format (e.g., '2025-12-01', 'tomorrow', 'next Friday').",
+                  },
+                  assignee: {
+                    type: "string",
+                    description:
+                      "Name or email of the person to assign this task to.",
+                  },
                 },
-                priority: {
-                  type: "string",
-                  enum: ["LOW", "MEDIUM", "HIGH"],
-                  description: "Urgency of the task: LOW (routine), MEDIUM (standard), or HIGH (critical/bottleneck)."
-                },
-                dueDate: {
-                  type: "string",
-                  description: "Deadline in any standard format (e.g., '2024-12-01', 'tomorrow', 'next Friday')."
-                },
-                assignee: {
-                  type: "string",
-                  description: "The name or email of the person this task should be assigned to."
-                }
+                required: ["title"],
               },
-              required: ["title"]
-            }
-          }
-        }
-      ],
-      tool_choice: "auto"
-    });
+            },
+          },
+        ],
+        tool_choice: "auto",
+      } as any);
 
       return stream;
     } catch (error: any) {
       console.error("AI Streaming Error Details:", error);
       throw new Error(`Failed to start AI stream: ${error.message}`);
     }
-  }
+  },
 };
